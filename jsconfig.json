@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["*", "src/*", "lib/*"]
+    }
+  },
+  "exclude": ["node_modules", "build", "dist", "docs", "public"]
+}

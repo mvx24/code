@@ -1,0 +1,9 @@
+# Standard Ignores
+.DS_Store
+todo.txt
+*.bak
+*.tmp
+build/
+dist/
+docs/
+

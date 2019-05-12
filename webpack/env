@@ -1,0 +1,7 @@
+# NOTE: This file SHOULD be committed along with any other non-local .env files
+# https://github.com/bkeepers/dotenv/blob/master/README.md
+
+### Custom variables
+# Only variables with WEBPACK_VAR_ can be read by the webapp
+# Defined in code as process.env.WEBPACK_VAR_*
+# Also available as readonly vars are process.env.NODE_ENV and process.env.PUBLIC_URL

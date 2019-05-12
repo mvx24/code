@@ -1,0 +1,61 @@
+const childProcess = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+const AWS = require('aws-sdk');
+
+// AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables should be set
+// https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/loading-node-credentials-environment.html
+// Environment variables can be configured with .env files or CI/CD settings
+// https://gitlab.com/help/ci/variables/README
+
+// Configure the deployment using the following
+const config = {
+  functionName: '',
+};
+
+// Read in .env files and check for credentials
+dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
+dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
+dotenv.config(path.resolve(__dirname, `.env.local`));
+dotenv.config();
+if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+  console.error('Error: No AWS credentials found in environment variables');
+  process.exit(1);
+}
+
+if (!config.functionName) {
+  console.error('Error: No deployment functionName configured');
+  process.exit(1);
+}
+
+function execSync(cmd) {
+  childProcess.execSync(cmd, { stdio: [0, 1, 2] });
+}
+
+// Package using yarn into a temp dir
+const packageDir = fs.mkdtempSync('/tmp/lambda-');
+const packageTarball = path.join(packageDir, 'package.tgz');
+const packageExtracted = path.join(packageDir, 'package');
+const packageZip = path.join(packageDir, 'package.zip');
+execSync(`yarn pack --silent -f ${packageTarball}`);
+execSync(`tar -C ${packageDir} -xzf ${packageTarball}`);
+// Use the node Docker linux image to install dependencies
+const npmInstall = 'npm install --production --silent --no-audit';
+execSync(`docker run -v ${packageExtracted}:/run/package -w /run/package --rm node ${npmInstall}`);
+// Zip the files
+execSync(`zip -q -r -j -9 ${packageZip} ${packageExtracted}/*`);
+console.log(`Uploading ${packageZip}`);
+
+// Deploy to lambda
+const lambda = new AWS.Lambda({ apiVersion: 'latest' });
+const zipData = fs.readFileSync(packageZip);
+const params = { FunctionName: config.functionName, Publish: true, ZipFile: zipData };
+lambda.updateFunctionCode(params, err => {
+  if (err) {
+    console.error(err);
+    process.exit(1);
+  } else {
+    console.log(`${config.functionName} has been updated`);
+  }
+});

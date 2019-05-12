@@ -1,0 +1,7 @@
+# NOTE: This file SHOULD be committed along with any other non-local .env files
+# https://facebook.github.io/create-react-app/docs/adding-custom-environment-variables
+
+### Custom variables
+# Only variables with REACT_APP_ can be read by the webapp
+# Defined in code as process.env.REACT_APP_*
+# Also available as readonly vars are process.env.NODE_ENV and process.env.PUBLIC_URL

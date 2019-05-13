@@ -1,1 +1,1 @@
-Random bits of reusable code made public under MIT license.
+Random bits of reusable code made public under an MIT license.

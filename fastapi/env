@@ -1,0 +1,7 @@
+APP_SECRET_KEY=__APP_SECRET_KEY__
+APP_PRIMARY_KEY_AS_UUID=true
+
+APP_REDIS_PASSWORD=somepassword
+
+APP_DB_USERNAME=postgres
+APP_DB_PASSWORD=mysecretpassword

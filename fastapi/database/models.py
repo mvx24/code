@@ -7,6 +7,7 @@ from typing import Set, Dict, List
 
 from pydantic import BaseModel, Schema, validate_model
 from sqlalchemy import text
+from sqlalchemy.sql.expression import ClauseElement, Selectable
 
 from utils.casing import camel_case_dict
 from .engine import database, metadata
@@ -28,6 +29,7 @@ class DbMetaModel(MetaModel):
         cls._response_model = None
         cls._write_only = set()
         cls._read_only = set()
+        cls._read_only_defaults = dict()
         cls._auto_now = set()
         cls._auto_now_add = set()
 
@@ -47,6 +49,13 @@ class DbMetaModel(MetaModel):
                     cls._write_only.add(field.name)
                 if field.schema.extra.get('readOnly'):
                     cls._read_only.add(field.name)
+                    # Read-only fields cannot be required
+                    # otherwise there will be no value to run INSERTs with
+                    assert not field.required
+                    # Default value of None is one of auto_now, server default, primary key etc.
+                    # so don't use it for INSERTs
+                    if field.default is not None:
+                        cls._read_only_defaults[field.name] = field.default
 
         super().__init__(_name, _bases, _dct)
 
@@ -105,11 +114,13 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return [cls.parse_row(r) for r in rows]
 
     @classmethod
-    async def get(cls, row_id, parse=False):
+    async def get(cls, clause_or_row_id, parse=False):
         """
         Get a single model from the database based on id.
         """
-        query = cls.table.select().where(cls.table.c.id == row_id)
+        if not isinstance(clause_or_row_id, ClauseElement):
+            clause_or_row_id = (cls.c.id == clause_or_row_id)
+        query = cls.table.select().where(clause_or_row_id)
         result = await database.fetch_one(query)
         obj = result
         if parse:
@@ -117,10 +128,14 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return obj
 
     @classmethod
-    async def read(cls, query, parse=False, start=None, stop=None):
+    async def read(cls, clause_or_select, parse=False, start=None, stop=None):
         """
         Read rows from the database, optionally limited and parsed into model instances.
         """
+        if not isinstance(clause_or_select, Selectable):
+            query = cls.table.select().where(clause_or_select)
+        else:
+            query = clause_or_select
         if start is not None:
             query = query.offset(start)
         if stop is not None:
@@ -131,29 +146,38 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             rows = cls.parse_rows(rows)
         return rows
 
-    async def save(self, read_only=False, **values):
+    async def save(self, update_values=None, read_only=False):
         """
         Insert or update the model with the database.
         Set read_only=True to force writing fields that are publicly read_only.
+
+        NOTE: update_values should NOT be **update_values
+        otherwise read_only could get set by some external data
         """
         # pylint: disable=protected-access, no-value-for-parameter
-        if values:
-            self.assign(**values)
         cls = self.__class__
         table = cls.table
         if not read_only:
             exclude = {'id', *cls._read_only}
         else:
             exclude = {'id'}
+        if update_values:
+            if not read_only:
+                self.assign(**{k: v for k, v in update_values.items() if k not in exclude})
+            else:
+                self.assign(**update_values)
+        values = self.dict(exclude=exclude)
         if self.is_new:
-            query = table.insert().values(self.dict(exclude=exclude)).return_defaults()
+            if not read_only:
+                values.update(cls._read_only_defaults)
+                self.assign(**cls._read_only_defaults)
+            query = table.insert().values(values).return_defaults()
             result = await database.fetch_one(query)
             self.id = result['id']
             for name in cls._auto_now_add:
                 if name in result:
                     setattr(self, name, result[name])
         else:
-            values = self.dict(exclude=exclude)
             # Implement the auto_now functionality
             for name in cls._auto_now:
                 values.setdefault(name, text('NOW()'))
@@ -162,6 +186,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             for name in cls._auto_now:
                 if name in result:
                     setattr(self, name, result[name])
+        return self
 
     async def delete(self):
         """
@@ -171,6 +196,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         table = self.__class__.table
         query = table.delete().where(table.c.id == self.id)
         await database.execute(query)
+        return self
 
     @classmethod
     def response_model(cls, name=None, remove: Set[str] = None, embed: Dict[str, BaseModel] = None):

@@ -26,3 +26,11 @@ def configure():
             generate_table(model, metadata)
     return metadata
 
+
+def process_revision_directives(context, revision, directives):
+    if config.cmd_opts.autogenerate:
+        script = directives[0]
+        if script.upgrade_ops.is_empty():
+            print('\033[1mNo changes found to migrate!\033[0m')
+            directives[:] = []
+

@@ -6,4 +6,4 @@ todo.txt
 build/
 dist/
 docs/
-
+__pycache__

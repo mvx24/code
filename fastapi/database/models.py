@@ -128,7 +128,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return obj
 
     @classmethod
-    async def read(cls, clause_or_select, parse=False, start=None, stop=None):
+    async def read(cls, clause_or_select=None, parse=False, start=None, stop=None):
         """
         Read rows from the database, optionally limited and parsed into model instances.
         """

@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: str = None
     GZIP_THRESHOLD: int = 2048
 
+    # Paging
+    DEFAULT_PAGE_SIZE: int = 50
+    MAX_PAGE_SIZE: int = 250
+
     # Access Tokens
     TOKEN_ISSUER: str = 'pyjwt'
     TOKEN_ALGORITHM: str = 'HS256'
@@ -60,6 +64,10 @@ class Settings(BaseSettings):
 
     # Sentry
     SENTRY_DSN: UrlStr = None
+
+    # Uploads
+    UPLOAD_BUCKET: str = None
+    UPLOAD_BUCKET_PROVIDER: str = 'b2'
 
 
 # Load up environment variables and initialize the settings

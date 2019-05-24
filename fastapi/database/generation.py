@@ -42,6 +42,8 @@ save() method of a model
 * To avoid the auto link with ForeignKeys, specify a 'to' parameter in the Schema
 e.g. author_id: ForeignKey = Schema(None, to='User')
 
+* Generic ForeignKeys are created by adding generic=True to the schema, this simply skips adding the constraints on the table
+
 * Embedding models via response_model() will assume that if an _id field is defined it will embed a
 single object (as in ForeignKey and One-to-One relationships), otherwise it will embed a list
 (as in ManytoMany or reverse ForeignKey relationships)
@@ -285,7 +287,7 @@ def generate_column(table_name, field):
         kwargs['nullable'] = True
 
     # Check for foreign key constraints
-    if name.endswith('_id'):
+    if name.endswith('_id') and not field.schema.extra.get('generic', False):
         foreign_table = camel_to_snake_case(field.schema.extra.get('to', name[:-3]))
         on_update = str(field.schema.extra.get('on_update', ForeignKeyAction.CASCADE))
         on_delete = str(field.schema.extra.get('on_delete', ForeignKeyAction.CASCADE))

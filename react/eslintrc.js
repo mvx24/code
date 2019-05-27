@@ -1,6 +1,7 @@
 // NOTE: Do not add eslint as a dependency otherwise eslint-config-react-app will get pushed back in
 // the module tree and will not be locatable. Just ignore the missing peer dependecy warning of the react-hooks plugin
 const config = require('eslint-config-react-app');
+const path = require('path');
 
 config.extends = [
   'eslint:recommended',
@@ -16,7 +17,7 @@ process.env.BABEL_ENV = process.env.BABEL_ENV || 'development';
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 config.settings = config.settings || {};
 config.settings['import/resolver'] = {
-  webpack: { config: './node_modules/react-scripts/config/webpack.config.js' },
+  webpack: { config: path.join(__dirname, 'node_modules/react-scripts/config/webpack.config.js') },
 };
 
 // Customize the rules and upgrade to errors

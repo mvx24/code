@@ -1,0 +1,15 @@
+<mj-section background-color="lightgrey">
+  <mj-column>
+    <mj-text align="center" mj-class="small dark">
+      Sent by the team @ <a href="http://www.example.app">Example, Inc.</a> 111 Market St, Suite 100, San Francisco CA, 94100
+      <br />
+      If you would like to unsubscribe and stop receiving these emails please contact us.
+    </mj-text>
+    <mj-social icon-size="20px" mode="horizontal">
+      <mj-social-element name="instagram" href="https://mjml.io/"></mj-social-element>
+      <mj-social-element name="twitter" href="https://mjml.io/"></mj-social-element>
+      <mj-social-element name="facebook" href="https://mjml.io/"></mj-social-element>
+      <mj-social-element name="linkedin" href="https://mjml.io/"></mj-social-element>
+    </mj-social>
+  </mj-column>
+</mj-section>

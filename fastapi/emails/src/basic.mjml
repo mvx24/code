@@ -1,0 +1,30 @@
+<mjml>
+  <mj-include path="_head.mjml" />
+  <mj-body>
+    <mj-include path="_header.mjml" />
+
+    <mj-section>
+      <mj-column>
+        <!-- {% if subtitle %} -->
+        <mj-text mj-class="subtitle">
+          {{ subtitle }}
+        </mj-text>
+        <!-- {% endif %} -->
+
+        <mj-text>
+          {{ message }}
+        </mj-text>
+
+        <!-- {% if postscript %} -->
+        <mj-text mj-class="small">
+          {{ postscript }}
+        </mj-text>
+        <!-- {% endif %} -->
+      </mj-column>
+    </mj-section>
+
+    <mj-include path="_button.mjml" />
+
+    <mj-include path="_footer.mjml" />
+  </mj-body>
+</mjml>

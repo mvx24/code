@@ -4,7 +4,6 @@ from app.asgi import app
 from dependencies import current_user
 from models import User
 from utils.email import send_email
-from utils.tokens import create_token
 
 
 @app.get('/check-availability')
@@ -36,3 +35,9 @@ async def register_user(user: User, background_tasks: BackgroundTasks):
     # background_tasks.add_task(send_email, 'Welcome {{user.name}}', 'welcome', {
     #                           'user': user, 'confirm_token': create_token()})
     return user
+
+
+@app.get('/confirm-email/{token}')
+async def confirm_email(token):
+    user = await current_user(token)
+    await user.save({'is_confirmed': True}, True)

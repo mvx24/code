@@ -1,4 +1,4 @@
-<mj-section background-color="lightgrey">
+<mj-section mj-class="footer">
   <mj-column>
     <mj-text align="center" mj-class="small dark">
       Sent by the team @ <a href="http://www.example.app">Example, Inc.</a> 111 Market St, Suite 100, San Francisco CA, 94100

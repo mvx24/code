@@ -1,6 +1,10 @@
-<mj-section>
+<mj-section mj-class="logo">
   <mj-column>
     <mj-image width="100px" src="http://via.placeholder.com/100x60"></mj-image>
+  </mj-column>
+</mj-section>
+<mj-section>
+  <mj-column>
     <!-- {% if title %} -->
     <mj-text align="center" mj-class="title">{{ title }}</mj-text>
     <!-- {% endif %} -->

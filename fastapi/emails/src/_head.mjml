@@ -8,11 +8,14 @@
     <mj-divider border-color="#000000" />
     <mj-button background-color="#f45e43" color="white" />
     <mj-text color="#101010" />
+    <mj-body background-color="lightgrey" />
     <mj-class name="title" font-size="44px" font-weight="bold" />
     <mj-class name="subtitle" font-size="28px" />
     <mj-class name="small" font-size="10px" />
     <mj-class name="dark" color="#33333e" />
     <mj-class name="light" color="#eeeeee" />
+    <mj-class name="logo" background-color="lightgrey" />
+    <mj-class name="footer" background-color="lightgrey" />
     <mj-all font-family="Lato, arial" />
   </mj-attributes>
 </mj-head>

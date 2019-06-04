@@ -1,0 +1,11 @@
+{
+  "name": "resizer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "exif-parser": "^0.1.12",
+    "sharp": "^0.22.1"
+  }
+}

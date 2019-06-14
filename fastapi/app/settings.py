@@ -67,7 +67,11 @@ class Settings(BaseSettings):
 
     # Uploads
     UPLOAD_BUCKET: str = None
-    UPLOAD_BUCKET_PROVIDER: str = 'b2'
+    UPLOAD_BUCKET_PROVIDER: str = None
+
+    # Sourcemaps
+    SOURCEMAP_BUCKET: str = None
+    SOURCEMAP_BUCKET_PROVIDER: str = None
 
 
 # Load up environment variables and initialize the settings

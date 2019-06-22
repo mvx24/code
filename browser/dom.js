@@ -9,7 +9,14 @@ function flatten(arr) {
   return arr;
 }
 
-function h(name, attributes, ...childNodes) {
+const logicalAttrs = {
+  callback: 1,
+  default: 1,
+  path: 1,
+  ref: 1,
+};
+
+function h(nodeName, attributes, ...childNodes) {
   const children = flatten(childNodes)
     .filter(c => c !== undefined && c !== null)
     .reduce((rc, c) => {
@@ -18,8 +25,20 @@ function h(name, attributes, ...childNodes) {
       else rc.push(String(c));
       return rc;
     }, []);
+  if (typeof nodeName === 'function') {
+    const vnode = nodeName(Object.assign({ children }, attributes));
+    if (attributes) {
+      Object.keys(attributes).forEach(attr => {
+        if (logicalAttrs[attr]) {
+          vnode.attributes = vnode.attributes || {};
+          vnode.attributes[attr] = attributes[attr];
+        }
+      });
+    }
+    return vnode;
+  }
   return {
-    nodeName: typeof name === 'function' ? name(Object.assign({ children }, attributes)) : name,
+    nodeName,
     attributes,
     children,
   };
@@ -54,13 +73,19 @@ function render(vnode, target, rerender, insideSvg) {
           el.addEventListener(attr.substr(2).toLowerCase(), value);
         } else if (attr === 'ref') {
           value(el);
+        } else if (attr === 'callback') {
+          // eslint-disable-next-line
+          const ref = createRef();
+          ref(el);
+          const replacement = value(ref);
+          if (replacement) return render(replacement, target, rerender, insideSvg);
         }
       } else {
         if (isSvg && xlinkAttrs[attr]) {
           el.setAttributeNS(xlinkNamespace, attr, value);
         } else if (isSvg && attr === 'lang') {
           el.setAttributeNS(svgNamespace, attr, value);
-        } else {
+        } else if (!logicalAttrs[attr]) {
           el.setAttribute(attrMap[attr] || attr, value);
         }
       }
@@ -87,7 +112,14 @@ function createRef() {
   const ref = function(el) {
     current = el;
   };
-  Object.defineProperty(ref, 'current', { get: () => current });
+  Object.defineProperty(ref, 'current', {
+    get: () => current,
+    set: vnode => {
+      const el = render(vnode);
+      current.parentElement.replaceChild(el, current);
+      current = el;
+    },
+  });
   return ref;
 }
 

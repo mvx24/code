@@ -14,23 +14,22 @@ const config = {
   functionName: '',
 };
 
+const execSync = cmd => childProcess.execSync(cmd, { stdio: [0, 1, 2] });
+const begin = msg => console.log(['\033[1m', msg, '\033[0m'].join(''));
+const error = msg => {
+  console.error(['\033[1;31m', 'Error: ', msg, '\033[0m'].join(''));
+  process.exit(1);
+};
+
 // Read in .env files and check for credentials
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
 dotenv.config(path.resolve(__dirname, `.env.local`));
 dotenv.config();
+
+if (!config.functionName) error('No deployment functionName configured');
 if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-  console.error('Error: No AWS credentials found in environment variables');
-  process.exit(1);
-}
-
-if (!config.functionName) {
-  console.error('Error: No deployment functionName configured');
-  process.exit(1);
-}
-
-function execSync(cmd) {
-  childProcess.execSync(cmd, { stdio: [0, 1, 2] });
+  error('No AWS credentials found in environment variables');
 }
 
 // Package using yarn into a temp dir
@@ -45,7 +44,7 @@ const npmInstall = 'npm install --production --silent --no-audit';
 execSync(`docker run -v ${packageExtracted}:/run/package -w /run/package --rm node ${npmInstall}`);
 // Zip the files
 execSync(`zip -q -r -j -9 ${packageZip} ${packageExtracted}/*`);
-console.log(`Uploading ${packageZip}`);
+begin(`Uploading ${packageZip}`);
 
 // Deploy to lambda
 const lambda = new AWS.Lambda({ apiVersion: 'latest' });
@@ -53,9 +52,8 @@ const zipData = fs.readFileSync(packageZip);
 const params = { FunctionName: config.functionName, Publish: true, ZipFile: zipData };
 lambda.updateFunctionCode(params, err => {
   if (err) {
-    console.error(err);
-    process.exit(1);
+    error(err);
   } else {
-    console.log(`${config.functionName} has been updated`);
+    console.log(`\u{1f680}  ${config.functionName} has been updated`);
   }
 });

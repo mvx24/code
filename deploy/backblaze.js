@@ -19,14 +19,20 @@ const config = {
   sourceMapOrigin: '',
 };
 
+const log = msg => console.log(msg);
+const begin = msg => console.log(['\033[1m', msg, '\033[0m'].join(''));
+const error = msg => {
+  console.error(['\033[1;31m', 'Error: ', msg, '\033[0m'].join(''));
+  process.exit(1);
+};
+
 // Read in .env files
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
 dotenv.config(path.resolve(__dirname, `.env.local`));
 dotenv.config();
 if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY) {
-  console.error('Error: No Backblaze credentials found in environment variables');
-  process.exit(1);
+  error('No Backblaze credentials found in environment variables');
 }
 
 const buildDir = path.resolve(__dirname, '../build');
@@ -40,6 +46,7 @@ function b2(endpoint, options = {}, auth, data) {
   } else {
     url = `${auth ? auth.apiUrl : 'https://api.backblazeb2.com'}/b2api/v2/${endpoint}`;
   }
+  options.method = data ? 'post' : 'get';
   options.headers = options.headers || {};
   options.headers.Accept = 'application/json';
   if (auth) {
@@ -48,14 +55,7 @@ function b2(endpoint, options = {}, auth, data) {
   return new Promise(resolve => {
     const cb = res => {
       const { statusCode } = res;
-      let error;
-      if (statusCode !== 200) {
-        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`);
-      }
-      if (error) {
-        console.error(error.message);
-        process.exit(1);
-      }
+      if (statusCode >= 400) error(`Request Failed.\nStatus Code: ${statusCode}`);
       res.setEncoding('utf8');
       let rawData = '';
       res.on('data', chunk => {
@@ -67,15 +67,12 @@ function b2(endpoint, options = {}, auth, data) {
     };
     const jsonData = !(Buffer.isBuffer(data) || typeof data === 'string');
     if (jsonData) options.headers['Content-Type'] = 'application/json';
-    const req = data ? https.post(url, options, cb) : https.get(url, options, cb);
-    req.on('error', e => {
-      console.error(`Got error: ${e.message}`);
-      process.exit(1);
-    });
+    const req = https.request(url, options, cb);
+    req.on('error', err => error(err.message));
     if (data) {
       req.write(jsonData ? JSON.stringify(data) : data);
-      req.end();
     }
+    req.end();
   });
 }
 
@@ -109,7 +106,7 @@ function putFiles(auth, bucketId, files, i, cb) {
       auth,
       data,
     ).then(() => {
-      console.log(key);
+      log(`\u{2705}  ${key}`);
       if (i < files.length - 1) {
         putFiles(auth, bucketId, file, i + 1);
       } else if (cb) {
@@ -126,7 +123,7 @@ function hideFiles(auth, bucketId, excludeFiles, cb) {
       const { fileName } = files[i];
       if (excludeFiles.indexOf(fileName) === -1) {
         b2('b2_hide_file', {}, auth, { bucketId, fileName }).then(() => {
-          console.log(fileName);
+          log(`\u{274c}  ${fileName}`);
           if (i < files.length - 1) {
             hideFile(i + 1);
           } else if (cb) {
@@ -141,13 +138,15 @@ function hideFiles(auth, bucketId, excludeFiles, cb) {
 
 function cleanupBuckets(auth) {
   // Cleanup by hiding the old deployment within the bucket(s)
-  console.log(`Hiding old files from ${config.bucket}:`);
+  begin(`Hiding old files from ${config.bucket}:`);
   if (config.bucketId === config.sourceMapBucketId) {
     hideFiles(auth, config.bucketId, [...buildFiles, ...sourceMapFiles]);
   } else {
     hideFiles(auth, config.bucketId, buildFiles, () => {
-      console.log(`Hiding old files from ${config.sourceMapBucket}:`);
-      hideFiles(auth, config.sourceMapBucketId, sourceMapFiles);
+      if (config.sourceMapBucket) {
+        begin(`Hiding old files from ${config.sourceMapBucket}:`);
+        hideFiles(auth, config.sourceMapBucketId, sourceMapFiles);
+      }
     });
   }
 }
@@ -167,11 +166,11 @@ b2('b2_authorize_account', {
     });
     if (config.bucketId) {
       // Upload the build
-      console.log(`Uploading to ${config.bucket}:`);
+      begin(`Uploading to ${config.bucket}:`);
       putFiles(auth, config.bucketId, buildFiles, 0, () => {
         // Upload the source maps
         if (config.sourceMapBucketId) {
-          console.log(`Uploading to ${config.sourceMapBucket}:`);
+          begin(`Uploading to ${config.sourceMapBucket}:`);
           putFiles(auth, config.sourceMapBucketId, sourceMapFiles, 0, () => {
             cleanupBuckets(auth);
           });
@@ -180,8 +179,7 @@ b2('b2_authorize_account', {
         }
       });
     } else {
-      console.error('Error: No deployment bucket configured');
-      process.exit(1);
+      error('No deployment bucket configured');
     }
   });
 });

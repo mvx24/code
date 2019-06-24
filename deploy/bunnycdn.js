@@ -1,3 +1,4 @@
+const fs = require('fs');
 const https = require('https');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -13,10 +14,12 @@ const config = {
   sourceMapOrigin: '',
 };
 
-if (!config.zoneId) {
-  console.error('Error: No BunnyCDN zoneId specified');
+const log = msg => console.log(msg);
+const begin = msg => console.log(['\033[1m', msg, '\033[0m'].join(''));
+const error = msg => {
+  console.error(['\033[1;31m', 'Error: ', msg, '\033[0m'].join(''));
   process.exit(1);
-}
+};
 
 // Read in .env files
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
@@ -27,18 +30,19 @@ dotenv.config();
 const accessKey = process.env.BUNNYCDN_ACCESS_KEY;
 const storageAccessKey = process.env.BUNNYCDN_STORAGE_ACCESS_KEY;
 const sourceMapStorageAccessKey = process.env.BUNNYCDN_SOURCE_MAP_STORAGE_ACCESS_KEY;
-if (!accessKey) {
-  console.error('Error: No BunnyCDN credentials found in environment variables');
-  process.exit(1);
-}
+
+if (!config.zoneId) error('No BunnyCDN zoneId specified');
+if (!accessKey) error('No BunnyCDN credentials found in environment variables');
 if (config.storageZone && !storageAccessKey) {
-  console.error('Error: No BunnyCDN storage credentials found in environment variables');
-  process.exit(1);
+  error('No BunnyCDN storage credentials found in environment variables');
 }
-if (config.storageZone && !sourceMapStorageAccessKey) {
-  console.error('Error: No BunnyCDN source map storage credentials found in environment variables');
-  process.exit(1);
+if (config.sourceMapStorageZone && !sourceMapStorageAccessKey) {
+  error('No BunnyCDN source map storage credentials found in environment variables');
 }
+
+const buildDir = path.resolve(__dirname, '../build');
+const buildFiles = glob.sync(`${buildDir}/**/*`, { nodir: true, ignore: `${buildDir}/**/*.map` });
+const sourceMapFiles = glob.sync(`${buildDir}/**/*.map`, { nodir: true });
 
 function bunnyApi(method, endpoint, data, storageAccessKey) {
   const url = storageAccessKey
@@ -49,6 +53,7 @@ function bunnyApi(method, endpoint, data, storageAccessKey) {
       AccessKey: storageAccessKey || accessKey,
       Accept: 'application/json',
     },
+    method,
   };
   if (data)
     options.headers['Content-Type'] = storageAccessKey
@@ -57,32 +62,22 @@ function bunnyApi(method, endpoint, data, storageAccessKey) {
   return new Promise(resolve => {
     const cb = res => {
       const { statusCode } = res;
-      let error;
-      if (statusCode !== 200) {
-        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`);
-      }
-      if (error) {
-        console.error(error.message);
-        process.exit(1);
-      }
+      if (statusCode >= 400) error(`Request Failed.\nStatus Code: ${statusCode}`);
       res.setEncoding('utf8');
       let rawData = '';
       res.on('data', chunk => {
         rawData += chunk;
       });
       res.on('end', () => {
-        resolve(JSON.parse(rawData));
+        resolve(JSON.parse(rawData || 'null'));
       });
     };
-    const req = https[method](url, options, cb);
-    req.on('error', e => {
-      console.error(`Got error: ${e.message}`);
-      process.exit(1);
-    });
+    const req = https.request(url, options, cb);
+    req.on('error', err => error(err.message));
     if (data) {
       req.write(storageAccessKey ? data : JSON.stringify(data));
-      req.end();
     }
+    req.end();
   });
 }
 
@@ -102,68 +97,77 @@ function putFiles(storageZone, storageAccessKey, files) {
       data = data.split('# sourceMappingURL=');
       data = data.join(`# sourceMappingURL=${config.sourceMapOrigin}/${path.dirname(key)}/`);
     }
-    promises.push(bunnyApi('put', `${storageZone}/${filename}`, data, storageAccessKey));
+    promises.push(
+      bunnyApi('put', `${storageZone}/${filename}`, data, storageAccessKey).then(() => {
+        log(`\u{2705}  ${filename}`);
+      }),
+    );
   });
   return Promise.all(promises);
 }
 
-function deleteFiles(storageZone, storageAccessKey, excludeFiles) {
-  return bunnyApi('get', storageZone, null, storageAccessKey).then(existingFiles => {
-    const promises = [];
-    existingFiles.forEach(file => {
-      if (file.IsDirectory) return;
-      const filename = `${file.Path.substr(1)}/${file.ObjectName}`;
-      if (excludeFiles.indexOf(filename) === -1) {
-        console.log(filename);
-        promises.push(bunnyApi('delete', filename, null, storageAccessKey));
-      }
-    });
-    return Promise.all(promises);
-  });
+function deleteFiles(storageZone, storageAccessKey, excludeFiles, subpath = '') {
+  const excludeObjects = excludeFiles.map(ex => `${storageZone}/${ex.substr(buildDir.length + 1)}`);
+  return bunnyApi('get', `${storageZone}/${subpath}/`, null, storageAccessKey).then(
+    existingFiles => {
+      const promises = [];
+      existingFiles.forEach(file => {
+        if (file.IsDirectory) {
+          promises.push(deleteFiles(storageZone, storageAccessKey, excludeFiles, file.ObjectName));
+          return;
+        }
+        const filename = `${file.Path.substr(1)}${file.ObjectName}`;
+        if (excludeObjects.indexOf(filename) === -1) {
+          log(`\u{274c}  ${filename}`);
+          promises.push(bunnyApi('delete', filename, null, storageAccessKey));
+        }
+      });
+      return Promise.all(promises);
+    },
+  );
 }
 
 function purge() {
   return bunnyApi('post', `pullzone/${config.zoneId}/purgeCache`, { id: config.zoneId }).then(
     result => {
-      console.log('BunnyCDN Purge:');
-      console.log('Result', JSON.stringify(result));
+      begin(`BunnyCDN Purge:`);
+      log(`\u{1f680}  Result ${result ? JSON.stringify(result) : 'successful'}`);
     },
   );
 }
 
 if (config.storageZone) {
-  const buildDir = path.resolve(__dirname, '../build');
-  const buildFiles = glob.sync(`${buildDir}/**/*`, { nodir: true, ignore: `${buildDir}/**/*.map` });
-  const sourceMapFiles = glob.sync(`${buildDir}/**/*.map`, { nodir: true });
-
   const cleanupStorage = () => {
     // Cleanup by deleting the old deployment within the bucket(s)
-    console.log(`Deleting old files from ${config.storageZone}:`);
+    begin(`Deleting old files from ${config.storageZone}:`);
     if (config.storageZone === config.sourceMapStorageZone) {
-      return deleteFiles(config.storageZone, config.storageAccessKey, [
-        ...buildFiles,
-        ...sourceMapFiles,
-      ]);
+      return deleteFiles(config.storageZone, storageAccessKey, [...buildFiles, ...sourceMapFiles]);
     } else {
-      return deleteFiles(config.storageZone, config.storageAccessKey, buildFiles).then(() => {
-        console.log(`Deleting old files from ${config.sourceMapStorageZone}:`);
-        return deleteFiles(
-          config.sourceMapStorageZone,
-          config.sourceMapStorageAccessKey,
-          sourceMapFiles,
-        );
+      return deleteFiles(config.storageZone, storageAccessKey, buildFiles).then(() => {
+        if (config.sourceMapStorageZone) {
+          begin(`Deleting old files from ${config.sourceMapStorageZone}:`);
+          return deleteFiles(
+            config.sourceMapStorageZone,
+            sourceMapStorageAccessKey,
+            sourceMapFiles,
+          );
+        }
       });
     }
   };
 
   // Upload the build
-  console.log(`Uploading to ${config.storageZone}:`);
-  putFiles(config.storageZone, buildFiles, 0)
+  begin(`Uploading to ${config.storageZone}:`);
+  putFiles(config.storageZone, storageAccessKey, buildFiles)
     .then(() => {
       // Upload the source maps
       if (config.sourceMapStorageZone) {
-        console.log(`Uploading to ${config.sourceMapStorageZone}:`);
-        return putFiles(config.sourceMapStorageZone, sourceMapFiles, 0).then(cleanupStorage);
+        begin(`Uploading to ${config.sourceMapStorageZone}:`);
+        return putFiles(
+          config.sourceMapStorageZone,
+          config.sourceMapStorageAccessKey,
+          sourceMapFiles,
+        ).then(cleanupStorage);
       } else {
         return cleanupStorage();
       }

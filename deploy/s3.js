@@ -19,14 +19,21 @@ const config = {
   sourceMapOrigin: '',
 };
 
+const log = msg => console.log(msg);
+const begin = msg => console.log(['\033[1m', msg, '\033[0m'].join(''));
+const error = msg => {
+  console.error(['\033[1;31m', 'Error: ', msg, '\033[0m'].join(''));
+  process.exit(1);
+};
+
 // Read in .env files and check for credentials
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
 dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
 dotenv.config(path.resolve(__dirname, `.env.local`));
 dotenv.config();
+
 if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-  console.error('Error: No AWS credentials found in environment variables');
-  process.exit(1);
+  error('No AWS credentials found in environment variables');
 }
 
 const buildDir = path.resolve(__dirname, '../build');
@@ -54,10 +61,9 @@ function putFiles(s3, files, i, cb) {
     },
     err => {
       if (err) {
-        console.error(err);
-        process.exit(1);
+        error(err);
       } else {
-        console.log(key);
+        log(`\u{2705}  ${key}`);
         if (i < files.length - 1) {
           putFiles(files, i + 1);
         } else if (cb) {
@@ -71,8 +77,7 @@ function putFiles(s3, files, i, cb) {
 function deleteFiles(s3, excludeFiles, cb) {
   s3.listObjects({}, (err, data) => {
     if (err) {
-      console.error(err);
-      process.exit(1);
+      error(err);
     } else {
       const files = data.Contents;
       const deleteFile = i => {
@@ -80,10 +85,9 @@ function deleteFiles(s3, excludeFiles, cb) {
         if (excludeFiles.indexOf(fileName) === -1) {
           s3.deleteObject({ Bucket: s3.config.params.Bucket, Key: fileName }, delErr => {
             if (delErr) {
-              console.error(delErr);
-              process.exit(1);
+              error(delErr);
             } else {
-              console.log(fileName);
+              log(`\u{274c}  ${fileName}`);
               if (i < files.length - 1) {
                 deleteFile(i + 1);
               } else if (cb) {
@@ -111,28 +115,29 @@ const sourceMapS3 = new AWS.S3({
 
 function cleanupBuckets() {
   // Cleanup by deleting the old deployment within the bucket(s)
-  console.log(`Deleting old files from ${config.bucket}:`);
+  begin(`Deleting old files from ${config.bucket}:`);
   if (config.bucket === config.sourceMapBucket) {
     deleteFiles(buildS3, [...buildFiles, ...sourceMapFiles]);
   } else {
     deleteFiles(buildS3, buildFiles, () => {
-      console.log(`Deleting old files from ${config.sourceMapBucket}:`);
-      deleteFiles(sourceMapS3, sourceMapFiles);
+      if (config.sourceMapBucket) {
+        begin(`Deleting old files from ${config.sourceMapBucket}:`);
+        deleteFiles(sourceMapS3, sourceMapFiles);
+      }
     });
   }
 }
 
 if (config.bucket) {
-  console.log(`Uploading to ${config.bucket}:`);
+  begin(`Uploading to ${config.bucket}:`);
   putFiles(buildS3, buildFiles, 0, () => {
     if (config.sourceMapBucket) {
-      console.log(`Uploading to ${config.sourceMapBucket}:`);
+      begin(`Uploading to ${config.sourceMapBucket}:`);
       putFiles(sourceMapS3, sourceMapFiles, 0, cleanupBuckets);
     } else {
       cleanupBuckets();
     }
   });
 } else {
-  console.error('Error: No deployment bucket configured');
-  process.exit(1);
+  error('No deployment bucket configured');
 }

@@ -77,8 +77,17 @@ from pydantic.types import (
     UUID1 as UUID1_Type,
 )
 
-from sqlalchemy import Table, Column, Index, ForeignKey, UniqueConstraint, text, FetchedValue
+from sqlalchemy import (
+    Table,
+    Column,
+    Index,
+    ForeignKey,
+    UniqueConstraint,
+    text,
+    FetchedValue,
+)
 from sqlalchemy.types import TypeDecorator
+
 # https://github.com/sqlalchemy/sqlalchemy/blob/master/lib/sqlalchemy/dialects/postgresql/__init__.py
 from sqlalchemy.dialects.postgresql import (
     ARRAY,
@@ -108,7 +117,7 @@ from utils.casing import camel_to_snake_case
 from utils.encryption import encrypt, decrypt
 from .types import PasswordStr, EncryptedStr, ForeignKeyAction
 
-__all__ = ['generate_table']
+__all__ = ["generate_table"]
 
 
 TABLE_CACHE = {}
@@ -144,6 +153,7 @@ class ENCRYPTEDTEXT(TypeDecorator):
 # SecretStr - Should not be used
 # SecretBytes - Should not be used
 
+
 def map_type(type_):
     # https://www.postgresql.org/docs/9.3/datatype.html
     sql_type = None
@@ -164,7 +174,7 @@ def map_type(type_):
         sql_type = ARRAY(VARCHAR(255))
     elif issubclass(type_, Decimal):
         sql_type = NUMERIC
-    elif hasattr(type_, '__origin__'):
+    elif hasattr(type_, "__origin__"):
         # List, Tuple, Set, and Dict from typing module
         # Assumed to only allow one subtype at a time
         if issubclass(type_.__origin__, (list, tuple, set)):
@@ -222,7 +232,7 @@ def map_type(type_):
         # the logic for as_uuid is inverted for pg8000 vs the base implementation
         # https://github.com/sqlalchemy/sqlalchemy/blob/master/lib/sqlalchemy/dialects/postgresql/base.py#L1211
         # https://github.com/sqlalchemy/sqlalchemy/blob/master/lib/sqlalchemy/dialects/postgresql/pg8000.py#L129
-        as_uuid = settings.DB_DRIVERNAME == 'postgresql+pg8000'
+        as_uuid = settings.DB_DRIVERNAME == "postgresql+pg8000"
         sql_type = UUID(as_uuid=as_uuid)
     elif issubclass(type_, Path) or issubclass(type_, UrlStr):
         # URLS may be 65536 in length and paths don't seem to have a limit
@@ -234,7 +244,7 @@ def map_type(type_):
     elif type_ is StrictStr:
         sql_type = TEXT
     else:
-        print(f'Error: Unsupported type {type_}')
+        print(f"Error: Unsupported type {type_}")
     return sql_type
 
 
@@ -243,27 +253,27 @@ def generate_column(table_name, field):
     type_ = field.type_
     sql_type = map_type(type_)
     args = []
-    kwargs = {'nullable': False}
+    kwargs = {"nullable": False}
     items = []
 
     # Indexing
-    if field.schema.extra.get('index'):
+    if field.schema.extra.get("index"):
         gin_types = (ARRAY, HSTORE, JSONB)
         if sql_type in gin_types or isinstance(sql_type, gin_types):
-            items.append(Index(f'ix_{table_name}_{name}', name, postgresql_using='gin'))
+            items.append(Index(f"ix_{table_name}_{name}", name, postgresql_using="gin"))
             # For trigrams use the optional arg: postgresql_ops={name: 'gin_trgm_ops'}
-        kwargs['index'] = True
+        kwargs["index"] = True
 
     # Unique index
-    if field.schema.extra.get('unique'):
-        kwargs['index'] = True
-        kwargs['unique'] = True
+    if field.schema.extra.get("unique"):
+        kwargs["index"] = True
+        kwargs["unique"] = True
 
     # Unique together constraints
-    if 'unique_together' in field.schema.extra:
-        unique_together = field.schema.extra['unique_together']
+    if "unique_together" in field.schema.extra:
+        unique_together = field.schema.extra["unique_together"]
         if isinstance(unique_together, str):
-            unique_together = (unique_together, )
+            unique_together = (unique_together,)
         unique_together = set(unique_together)
         unique_together.add(name)
         unique_together = sorted(unique_together)
@@ -271,35 +281,37 @@ def generate_column(table_name, field):
         items.append(UniqueConstraint(*unique_together, name=unique_name))
 
     # Check primary key and nullable
-    if name == 'id':
-        kwargs['primary_key'] = True
-        kwargs['index'] = True
+    if name == "id":
+        kwargs["primary_key"] = True
+        kwargs["index"] = True
         # No need to set autoincrement, it is already set for INTEGER types
         # https://docs.sqlalchemy.org/en/13/core/metadata.html#sqlalchemy.schema.Column.params.autoincrement
         if sql_type is UUID or isinstance(sql_type, UUID):
             # Support v1 and v4 (random), v1 is not recommended
             # because much of the UUID will remain the same as the MAC address
             if type_ is UUID1_Type:
-                kwargs['server_default'] = text('uuid_generate_v1()')
+                kwargs["server_default"] = text("uuid_generate_v1()")
             else:
-                kwargs['server_default'] = text('uuid_generate_v4()')
+                kwargs["server_default"] = text("uuid_generate_v4()")
     elif field.default is None and not field.required:
-        kwargs['nullable'] = True
+        kwargs["nullable"] = True
 
     # Check for foreign key constraints
-    if name.endswith('_id') and not field.schema.extra.get('generic', False):
-        foreign_table = camel_to_snake_case(field.schema.extra.get('to', name[:-3]))
-        on_update = str(field.schema.extra.get('on_update', ForeignKeyAction.CASCADE))
-        on_delete = str(field.schema.extra.get('on_delete', ForeignKeyAction.CASCADE))
-        args.append(ForeignKey(f'{foreign_table}.id', onupdate=on_update, ondelete=on_delete))
+    if name.endswith("_id") and not field.schema.extra.get("generic", False):
+        foreign_table = camel_to_snake_case(field.schema.extra.get("to", name[:-3]))
+        on_update = str(field.schema.extra.get("on_update", ForeignKeyAction.CASCADE))
+        on_delete = str(field.schema.extra.get("on_delete", ForeignKeyAction.CASCADE))
+        args.append(
+            ForeignKey(f"{foreign_table}.id", onupdate=on_update, ondelete=on_delete)
+        )
 
     # Auto now defaults
-    if field.schema.extra.get('auto_now'):
+    if field.schema.extra.get("auto_now"):
         # Postgres doesn't have an ON UPDATE default value, so just mark
         # this column as having a returned value and implement the default in save()
-        kwargs['server_onupdate'] = FetchedValue()
-    if field.schema.extra.get('auto_now_add'):
-        kwargs['server_default'] = text('NOW()')
+        kwargs["server_onupdate"] = FetchedValue()
+    if field.schema.extra.get("auto_now_add"):
+        kwargs["server_default"] = text("NOW()")
 
     return (Column(name, sql_type, *args, **kwargs), items)
 

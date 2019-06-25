@@ -27,11 +27,12 @@ class ForeignKeyAction(str, Enum):
     The various actions to take on a foreign key on update or delete
     https://www.postgresql.org/docs/9.3/ddl-constraints.html
     """
-    RESTRICT = 'RESTRICT'
-    NO_ACTION = 'NO ACTION'
-    CASCADE = 'CASCADE'
-    SET_NULL = 'SET NULL'
-    SET_DEFAULT = 'SET DEFAULT'
+
+    RESTRICT = "RESTRICT"
+    NO_ACTION = "NO ACTION"
+    CASCADE = "CASCADE"
+    SET_NULL = "SET NULL"
+    SET_DEFAULT = "SET DEFAULT"
 
     def __str__(self):
         return self.value
@@ -42,11 +43,12 @@ class PasswordStr(str):
     Type suitable to hash and store a password in the database.
     ALWAYS remember to set write_only=True in the Schema for any field of this type.
     """
+
     strip_whitespace = True
     min_length = 6
     max_length = 64
     curtail_length = None
-    regex = re.compile(r'^\S*$')
+    regex = re.compile(r"^\S*$")
     hash_length = PASSWORD_HASH_LEN
 
     @classmethod
@@ -58,7 +60,7 @@ class PasswordStr(str):
             curtail_length=cls.curtail_length,
             regex=cls.regex,
         )
-        if not hasattr(cls, '_constr_validators'):
+        if not hasattr(cls, "_constr_validators"):
             cls._constr_validators = [
                 make_generic_validator(v) for v in constr_type.__get_validators__()
             ]
@@ -80,12 +82,12 @@ class PasswordStr(str):
 
 
 def passwordstr(
-        *,
-        strip_whitespace: bool = True,
-        min_length: int = 6,
-        max_length: int = 64,
-        curtail_length: int = None,
-        regex: str = r'^\S*$',
+    *,
+    strip_whitespace: bool = True,
+    min_length: int = 6,
+    max_length: int = 64,
+    curtail_length: int = None,
+    regex: str = r"^\S*$",
 ):
     namespace = dict(
         strip_whitespace=strip_whitespace,
@@ -95,7 +97,7 @@ def passwordstr(
         regex=regex and re.compile(regex),
         hash_length=PASSWORD_HASH_LEN,
     )
-    return type('PasswordStrValue', (PasswordStr,), namespace)
+    return type("PasswordStrValue", (PasswordStr,), namespace)
 
 
 class EncryptedStr(ConstrainedStr):
@@ -103,6 +105,7 @@ class EncryptedStr(ConstrainedStr):
     Type suitable to encrypt and store text in the database.
     ALWAYS remember to set write_only=True in the Schema for any field of this type.
     """
+
     strip_whitespace = False
     min_length = None
     max_length = None
@@ -111,12 +114,12 @@ class EncryptedStr(ConstrainedStr):
 
 
 def encryptedstr(
-        *,
-        strip_whitespace: bool = False,
-        min_length: int = None,
-        max_length: int = None,
-        curtail_length: int = None,
-        regex: str = None,
+    *,
+    strip_whitespace: bool = False,
+    min_length: int = None,
+    max_length: int = None,
+    curtail_length: int = None,
+    regex: str = None,
 ):
     namespace = dict(
         strip_whitespace=strip_whitespace,
@@ -125,4 +128,4 @@ def encryptedstr(
         curtail_length=curtail_length,
         regex=regex and re.compile(regex),
     )
-    return type('EncryptedStrValue', (EncryptedStr, ), namespace)
+    return type("EncryptedStrValue", (EncryptedStr,), namespace)

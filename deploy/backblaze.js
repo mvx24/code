@@ -53,6 +53,7 @@ function b2(endpoint, options = {}, auth, data) {
     options.headers.Authorization = options.headers.Authorization || auth.authorizationToken;
   }
   return new Promise(resolve => {
+    let body;
     const cb = res => {
       const { statusCode } = res;
       if (statusCode >= 400) error(`Request Failed.\nStatus Code: ${statusCode}`);
@@ -65,74 +66,78 @@ function b2(endpoint, options = {}, auth, data) {
         resolve(JSON.parse(rawData));
       });
     };
-    const jsonData = !(Buffer.isBuffer(data) || typeof data === 'string');
-    if (jsonData) options.headers['Content-Type'] = 'application/json';
+    if (data) {
+      body = data;
+      if (!(Buffer.isBuffer(data) || typeof data === 'string')) {
+        body = JSON.stringify(data);
+        options.headers['Content-Type'] = 'application/json';
+      }
+      options.headers['Content-Length'] = Buffer.byteLength(body);
+    }
     const req = https.request(url, options, cb);
     req.on('error', err => error(err.message));
-    if (data) {
-      req.write(jsonData ? JSON.stringify(data) : data);
-    }
+    if (body) req.write(body);
     req.end();
   });
 }
 
-function putFiles(auth, bucketId, files, i, cb) {
-  const file = files[i];
-  const key = file.substr(buildDir.length + 1);
-  let data = fs.readFileSync(file);
-  if (config.sourceMapOrigin && (file.endsWith('.js') || file.endsWith('.css'))) {
-    if (config.sourceMapOrigin.endsWith('/')) {
-      config.sourceMapOrigin = config.sourceMapOrigin.substr(0, config.sourceMapOrigin.length - 1);
-    }
-    data = data.toString('utf8');
-    data = data.split('# sourceMappingURL=');
-    data = data.join(`# sourceMappingURL=${config.sourceMapOrigin}/${path.dirname(key)}/`);
-  }
-  b2('b2_get_upload_url', {}, auth, { bucketId }).then(upload => {
-    const hash = crypto.createHash('sha1');
-    hash.update(data);
-    const sha1 = hash.digest('hex');
-    b2(
-      upload.uploadUrl,
-      {
-        headers: {
-          Authorization: upload.authorizationToken,
-          'Content-Length': Buffer.isBuffer(data) ? Buffer.length : Buffer.byteLength(data),
-          'Content-Type': mime.getType(key),
-          'X-Bz-File-Name': encodeURIComponent(key),
-          'X-Bz-Content-Sha1': sha1,
-        },
-      },
-      auth,
-      data,
-    ).then(() => {
-      log(`\u{2705}  ${key}`);
-      if (i < files.length - 1) {
-        putFiles(auth, bucketId, file, i + 1);
-      } else if (cb) {
-        cb();
+function putFiles(auth, bucketId, files) {
+  const promises = [];
+  files.forEach(file => {
+    const key = file.substr(buildDir.length + 1);
+    let data = fs.readFileSync(file);
+    if (config.sourceMapOrigin && (file.endsWith('.js') || file.endsWith('.css'))) {
+      if (config.sourceMapOrigin.endsWith('/')) {
+        config.sourceMapOrigin = config.sourceMapOrigin.substr(
+          0,
+          config.sourceMapOrigin.length - 1,
+        );
       }
-    });
+      data = data.toString('utf8');
+      data = data.split('# sourceMappingURL=');
+      data = data.join(`# sourceMappingURL=${config.sourceMapOrigin}/${path.dirname(key)}/`);
+    }
+    promises.push(
+      b2('b2_get_upload_url', {}, auth, { bucketId }).then(upload => {
+        const hash = crypto.createHash('sha1');
+        hash.update(data);
+        const sha1 = hash.digest('hex');
+        return b2(
+          upload.uploadUrl,
+          {
+            headers: {
+              Authorization: upload.authorizationToken,
+              'Content-Type': mime.getType(key),
+              'X-Bz-File-Name': encodeURIComponent(key),
+              'X-Bz-Content-Sha1': sha1,
+            },
+          },
+          auth,
+          data,
+        ).then(() => log(`\u{2705}  ${key}`));
+      }),
+    );
   });
+  return Promise.all(promises);
 }
 
-function hideFiles(auth, bucketId, excludeFiles, cb) {
-  b2('b2_list_file_names', {}, auth, { bucketId, maxFileCount: 999 }).then(res => {
-    const { files } = res;
-    const hideFile = i => {
-      const { fileName } = files[i];
-      if (excludeFiles.indexOf(fileName) === -1) {
-        b2('b2_hide_file', {}, auth, { bucketId, fileName }).then(() => {
-          log(`\u{274c}  ${fileName}`);
-          if (i < files.length - 1) {
-            hideFile(i + 1);
-          } else if (cb) {
-            cb();
+function hideFiles(auth, bucketId, excludeFiles) {
+  const excludeObjects = excludeFiles.map(ex => ex.substr(buildDir.length + 1));
+  return new Promise(resolve => {
+    b2('b2_list_file_names', {}, auth, { bucketId, maxFileCount: 999 }).then(res => {
+      const { files } = res;
+      Promise.all(
+        files.map(file => {
+          const { fileName } = file;
+          if (excludeObjects.indexOf(fileName) === -1) {
+            return b2('b2_hide_file', {}, auth, { bucketId, fileName }).then(() => {
+              log(`\u{274c}  ${fileName}`);
+            });
           }
-        });
-      }
-    };
-    hideFile(0);
+          return Promise.resolve();
+        }),
+      ).then(resolve);
+    });
   });
 }
 
@@ -142,7 +147,7 @@ function cleanupBuckets(auth) {
   if (config.bucketId === config.sourceMapBucketId) {
     hideFiles(auth, config.bucketId, [...buildFiles, ...sourceMapFiles]);
   } else {
-    hideFiles(auth, config.bucketId, buildFiles, () => {
+    hideFiles(auth, config.bucketId, buildFiles).then(() => {
       if (config.sourceMapBucket) {
         begin(`Hiding old files from ${config.sourceMapBucket}:`);
         hideFiles(auth, config.sourceMapBucketId, sourceMapFiles);
@@ -167,11 +172,11 @@ b2('b2_authorize_account', {
     if (config.bucketId) {
       // Upload the build
       begin(`Uploading to ${config.bucket}:`);
-      putFiles(auth, config.bucketId, buildFiles, 0, () => {
+      putFiles(auth, config.bucketId, buildFiles).then(() => {
         // Upload the source maps
         if (config.sourceMapBucketId) {
           begin(`Uploading to ${config.sourceMapBucket}:`);
-          putFiles(auth, config.sourceMapBucketId, sourceMapFiles, 0, () => {
+          putFiles(auth, config.sourceMapBucketId, sourceMapFiles).then(() => {
             cleanupBuckets(auth);
           });
         } else {

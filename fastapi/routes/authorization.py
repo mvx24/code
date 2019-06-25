@@ -21,47 +21,55 @@ class Token(BaseModel):
     refresh_token: str = None
 
 
-@app.post('/oauth/authorize', response_model=Token)
+@app.post("/oauth/authorize", response_model=Token)
 async def authorize():
-    # TODO figure out how to grab the query string and return an authorization code to the redirect url
+    # TODO figure out how to grab the query string and return an authorization
+    # code to the redirect url
     pass
 
 
-@app.post('/oauth/token', response_model=Token)
+@app.post("/oauth/token", response_model=Token)
 async def authorization_code_access_token(form_data):
     # TODO figure out how it exchanges for a normal access token
     pass
 
 
-@app.post('/oauth/revoke', response_model=Token)
-async def revoke_access_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl='/oauth/login'))):
+@app.post("/oauth/revoke", response_model=Token)
+async def revoke_access_token(
+    token: str = Depends(OAuth2PasswordBearer(tokenUrl="/oauth/login"))
+):
     revoke_token(token)
 
 
-@app.post('/oauth/implicit', response_model=Token)
+@app.post("/oauth/implicit", response_model=Token)
 async def implicit_access_token(form_data):
     # TODO figure out how it exchanges for a normal access token
     pass
 
 
-# curl -d 'username=marc@shareroot.co&password=abcd1234&grant_type=password'  http://localhost:8000/oauth/login
-@app.post('/oauth/login', response_model=Token)
+# curl -d 'username=marc@shareroot.co&password=abcd1234&grant_type=password'  \
+# http://localhost:8000/oauth/login
+@app.post("/oauth/login", response_model=Token)
 async def password_access_token(
-        form_data: OAuth2PasswordRequestFormStrict = Depends(),
-        is_web: bool = Depends(is_ajax),
+    form_data: OAuth2PasswordRequestFormStrict = Depends(),
+    is_web: bool = Depends(is_ajax),
 ):
     # https://tools.ietf.org/html/rfc6749#section-4.3
     user = await User.get(User.c.email == form_data.username, True)
     if not user or not check_password(form_data.password, user.password):
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
-            detail='Incorrect username or password',
-            headers={'WWW-Authenticate': 'Bearer'},
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(seconds=settings.TOKEN_EXPIRATION) if is_web else timedelta.max
-    access_token = create_token(data={'sub': str(user.id)}, expires_delta=access_token_expires)
+    access_token_expires = (
+        timedelta(seconds=settings.TOKEN_EXPIRATION) if is_web else timedelta.max
+    )
+    access_token = create_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
     return {
-        'access_token': access_token,
-        'token_type': 'bearer',
-        'expires_in': access_token_expires,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": access_token_expires,
     }

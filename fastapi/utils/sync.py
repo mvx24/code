@@ -4,7 +4,7 @@ Converts async functions to sync functions for use in an interactive REPL.
 
 import asyncio
 
-__all__ = ['run_sync', 'make_sync']
+__all__ = ["run_sync", "make_sync"]
 
 
 def run_sync(coro):
@@ -15,6 +15,7 @@ def run_sync(coro):
 def make_sync(func, instance=None):
     def inner(*args, **kwargs):
         return run_sync(func(*args, **kwargs))
+
     # Optionally, bind the function to an instance
     # given that func is an unbound method
     if instance:

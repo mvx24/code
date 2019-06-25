@@ -55,11 +55,8 @@ function bunnyApi(method, endpoint, data, storageAccessKey) {
     },
     method,
   };
-  if (data)
-    options.headers['Content-Type'] = storageAccessKey
-      ? mime.getType(endpoint)
-      : 'application/json';
   return new Promise(resolve => {
+    let body;
     const cb = res => {
       const { statusCode } = res;
       if (statusCode >= 400) error(`Request Failed.\nStatus Code: ${statusCode}`);
@@ -72,11 +69,16 @@ function bunnyApi(method, endpoint, data, storageAccessKey) {
         resolve(JSON.parse(rawData || 'null'));
       });
     };
+    if (data) {
+      body = storageAccessKey ? data : JSON.stringify(data);
+      options.headers['Content-Type'] = storageAccessKey
+        ? mime.getType(endpoint)
+        : 'application/json';
+      options.headers['Content-Length'] = Buffer.byteLength(body);
+    }
     const req = https.request(url, options, cb);
     req.on('error', err => error(err.message));
-    if (data) {
-      req.write(storageAccessKey ? data : JSON.stringify(data));
-    }
+    if (body) req.write(body);
     req.end();
   });
 }
@@ -95,7 +97,7 @@ function putFiles(storageZone, storageAccessKey, files) {
       }
       data = data.toString('utf8');
       data = data.split('# sourceMappingURL=');
-      data = data.join(`# sourceMappingURL=${config.sourceMapOrigin}/${path.dirname(key)}/`);
+      data = data.join(`# sourceMappingURL=${config.sourceMapOrigin}/${path.dirname(filename)}/`);
     }
     promises.push(
       bunnyApi('put', `${storageZone}/${filename}`, data, storageAccessKey).then(() => {
@@ -142,18 +144,13 @@ if (config.storageZone) {
     begin(`Deleting old files from ${config.storageZone}:`);
     if (config.storageZone === config.sourceMapStorageZone) {
       return deleteFiles(config.storageZone, storageAccessKey, [...buildFiles, ...sourceMapFiles]);
-    } else {
-      return deleteFiles(config.storageZone, storageAccessKey, buildFiles).then(() => {
-        if (config.sourceMapStorageZone) {
-          begin(`Deleting old files from ${config.sourceMapStorageZone}:`);
-          return deleteFiles(
-            config.sourceMapStorageZone,
-            sourceMapStorageAccessKey,
-            sourceMapFiles,
-          );
-        }
-      });
     }
+    return deleteFiles(config.storageZone, storageAccessKey, buildFiles).then(() => {
+      if (config.sourceMapStorageZone) {
+        begin(`Deleting old files from ${config.sourceMapStorageZone}:`);
+        return deleteFiles(config.sourceMapStorageZone, sourceMapStorageAccessKey, sourceMapFiles);
+      }
+    });
   };
 
   // Upload the build
@@ -168,9 +165,8 @@ if (config.storageZone) {
           config.sourceMapStorageAccessKey,
           sourceMapFiles,
         ).then(cleanupStorage);
-      } else {
-        return cleanupStorage();
       }
+      return cleanupStorage();
     })
     .then(purge);
 } else {

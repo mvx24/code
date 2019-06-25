@@ -3,11 +3,11 @@ Middleware for adding X-Frame-Options to all responses.
 """
 from starlette.middleware.base import BaseHTTPMiddleware
 
-__all__ = ['XFrameHeaderMiddleware']
+__all__ = ["XFrameHeaderMiddleware"]
 
 
-X_FRAME_HEADER = 'X-Frame-Options'
-X_FRAME_SAME_ORIGIN = 'sameorigin'
+X_FRAME_HEADER = "X-Frame-Options"
+X_FRAME_SAME_ORIGIN = "sameorigin"
 
 
 class XFrameHeaderMiddleware(BaseHTTPMiddleware):

@@ -14,7 +14,7 @@ from .engine import database, metadata
 from .generation import generate_table
 from .types import PrimaryKey
 
-__all__ = ['DbBaseModel']
+__all__ = ["DbBaseModel"]
 
 
 MetaModel = type(BaseModel)
@@ -34,20 +34,20 @@ class DbMetaModel(MetaModel):
         cls._auto_now_add = set()
 
         # Translate extra keys of each field Schema because openapi json expects camelCase
-        if hasattr(cls, '__fields__'):
+        if hasattr(cls, "__fields__"):
             for field in cls.__fields__.values():
                 camel_case_dict(field.schema.extra)
-                if field.schema.extra.get('auto_now'):
+                if field.schema.extra.get("auto_now"):
                     cls._auto_now.add(field.name)
-                    field.schema.extra['read_only'] = True
-                    field.schema.extra['readOnly'] = True
-                if field.schema.extra.get('auto_now_add'):
+                    field.schema.extra["read_only"] = True
+                    field.schema.extra["readOnly"] = True
+                if field.schema.extra.get("auto_now_add"):
                     cls._auto_now_add.add(field.name)
-                    field.schema.extra['read_only'] = True
-                    field.schema.extra['readOnly'] = True
-                if field.schema.extra.get('writeOnly'):
+                    field.schema.extra["read_only"] = True
+                    field.schema.extra["readOnly"] = True
+                if field.schema.extra.get("writeOnly"):
                     cls._write_only.add(field.name)
-                if field.schema.extra.get('readOnly'):
+                if field.schema.extra.get("readOnly"):
                     cls._read_only.add(field.name)
                     # Read-only fields cannot be required
                     # otherwise there will be no value to run INSERTs with
@@ -119,7 +119,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         Get a single model from the database based on id.
         """
         if not isinstance(clause_or_row_id, ClauseElement):
-            clause_or_row_id = (cls.c.id == clause_or_row_id)
+            clause_or_row_id = cls.c.id == clause_or_row_id
         query = cls.table.select().where(clause_or_row_id)
         result = await database.fetch_one(query)
         obj = result
@@ -158,12 +158,14 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         cls = self.__class__
         table = cls.table
         if not read_only:
-            exclude = {'id', *cls._read_only}
+            exclude = {"id", *cls._read_only}
         else:
-            exclude = {'id'}
+            exclude = {"id"}
         if update_values:
             if not read_only:
-                self.assign(**{k: v for k, v in update_values.items() if k not in exclude})
+                self.assign(
+                    **{k: v for k, v in update_values.items() if k not in exclude}
+                )
             else:
                 self.assign(**update_values)
         values = self.dict(exclude=exclude)
@@ -173,15 +175,20 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
                 self.assign(**cls._read_only_defaults)
             query = table.insert().values(values).return_defaults()
             result = await database.fetch_one(query)
-            self.id = result['id']
+            self.id = result["id"]
             for name in cls._auto_now_add:
                 if name in result:
                     setattr(self, name, result[name])
         else:
             # Implement the auto_now functionality
             for name in cls._auto_now:
-                values.setdefault(name, text('NOW()'))
-            query = table.update().where(table.c.id == self.id).values(values).return_defaults()
+                values.setdefault(name, text("NOW()"))
+            query = (
+                table.update()
+                .where(table.c.id == self.id)
+                .values(values)
+                .return_defaults()
+            )
             result = await database.fetch_one(query)
             for name in cls._auto_now:
                 if name in result:
@@ -199,7 +206,9 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return self
 
     @classmethod
-    def response_model(cls, name=None, remove: Set[str] = None, embed: Dict[str, BaseModel] = None):
+    def response_model(
+        cls, name=None, remove: Set[str] = None, embed: Dict[str, BaseModel] = None
+    ):
         if not remove and not embed and cls._response_model:
             return cls._response_model
         if not name:
@@ -209,37 +218,44 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         if not embed:
             embed = {}
         # Copy all the fields by splitting into the values (schemas) and annotation types
-        exclude = remove | set([f'{key}_id' for key in embed.keys()]) | cls._write_only
+        exclude = remove | set([f"{key}_id" for key in embed.keys()]) | cls._write_only
         namespace = {
             key: cls.__fields__[key].schema
-            for key in cls.__fields__ if key not in exclude
+            for key in cls.__fields__
+            if key not in exclude
         }
-        namespace['__annotations__'] = {
+        namespace["__annotations__"] = {
             key: cls.__fields__[key].type_
-            for key in cls.__fields__ if key not in exclude
+            for key in cls.__fields__
+            if key not in exclude
         }
         for key, model in embed.items():
             # All embedded models should also be response_models to remove write_only fields
             if issubclass(model, DbBaseModel):
                 model = model.response_model()
-            key_id = f'{key}_id'
+            key_id = f"{key}_id"
             # If embedding a ForeignKey assume that it is a single model, otherwise a list
             if key_id in cls.__fields__:
                 field = cls.__fields__[key_id]
-                namespace[key] = None if field.default is None and not field.required else ...
-                namespace['__annotations__'][key] = model
+                namespace[key] = (
+                    None if field.default is None and not field.required else ...
+                )
+                namespace["__annotations__"][key] = model
             else:
                 namespace[key] = []
-                namespace['__annotations__'][key] = List[model]
+                namespace["__annotations__"][key] = List[model]
         # Copy the config
-        namespace['Config'] = cls.__config__
-        response_model_cls = type(name, (BaseModel, ), namespace)
+        namespace["Config"] = cls.__config__
+        response_model_cls = type(name, (BaseModel,), namespace)
         # Copy validators after type() since they are already compiled into
         # generic validator functions - no easy way to put them back into a new namespace
-        response_model_cls.__validators__.update({
-            key: cls.__validators__[key]
-            for key in cls.__validators__ if key not in exclude
-        })
+        response_model_cls.__validators__.update(
+            {
+                key: cls.__validators__[key]
+                for key in cls.__validators__
+                if key not in exclude
+            }
+        )
         # Cache for later if it is the basic version
         if not remove and not embed:
             cls._response_model = response_model_cls

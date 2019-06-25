@@ -3,21 +3,23 @@ import os
 from base64 import b64encode
 
 
-async def b2(session, endpoint, headers, auth, data):
-    if endpoint.startswith('https://'):
+async def b2(session, endpoint, headers, auth=None, data=None):
+    if endpoint.startswith("https://"):
         url = endpoint
     else:
-        origin = auth['apiUrl'] if auth else 'https://api.backblazeb2.com'
-        url = f'{origin}/b2api/v2/{endpoint}'
-    headers['Accept'] = 'application/json'
+        origin = auth["apiUrl"] if auth else "https://api.backblazeb2.com"
+        url = f"{origin}/b2api/v2/{endpoint}"
+    headers["Accept"] = "application/json"
     if auth:
-        headers['Authorization'] = headers['Authorization'] or auth.get('authorizationToken')
+        headers["Authorization"] = headers["Authorization"] or auth.get(
+            "authorizationToken"
+        )
     if data:
         if isinstance(data, str):
-            data = data.encode('utf8')
+            data = data.encode("utf8")
         elif not isinstance(data, (str, bytes)):
-            data = json.dumps(data).encode('utf8')
-            headers['Content-Type'] = 'application/json'
+            data = json.dumps(data).encode("utf8")
+            headers["Content-Type"] = "application/json"
         async with session.post(url, headers=headers, data=data) as response:
             return await response.json()
     else:
@@ -26,19 +28,24 @@ async def b2(session, endpoint, headers, auth, data):
 
 
 async def b2_authorize_account(session):
-    app_key_id = os.getenv('B2_APPLICATION_KEY_ID')
-    app_key = os.getenv('B2_APPLICATION_KEY')
+    app_key_id = os.getenv("B2_APPLICATION_KEY_ID")
+    app_key = os.getenv("B2_APPLICATION_KEY")
     assert app_key_id and app_key
-    encoded = b64encode(f'{app_key_id}:{app_key}')
-    return await b2('b2_authorize_account', headers={'Authorization': f'Basic {encoded}'})
+    encoded = b64encode(f"{app_key_id}:{app_key}")
+    return await b2(
+        session, "b2_authorize_account", headers={"Authorization": f"Basic {encoded}"}
+    )
 
 
 BUCKET_ID_CACHE = {}
 
+
 async def b2_get_bucket_id(session, auth, bucket):
     if bucket in BUCKET_ID_CACHE:
         return BUCKET_ID_CACHE[bucket]
-    buckets = await b2(session, 'b2_list_buckets', {}, auth, {accountId: auth['accountId']})
-    updates = {entry['bucketName']: entry['bucketId'] for entry in buckets}
+    buckets = await b2(
+        session, "b2_list_buckets", {}, auth, {"accountId": auth["accountId"]}
+    )
+    updates = {entry["bucketName"]: entry["bucketId"] for entry in buckets}
     BUCKET_ID_CACHE.update(updates)
     return updates.get(bucket)

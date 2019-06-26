@@ -17,7 +17,7 @@ def is_hashed_password(password):
 
 
 def hash_password(password, salt=None):
-    password = bytes(password, "utf8")
+    password = bytes(password, "utf-8")
     if not salt:
         salt = urandom(64)
     else:
@@ -28,8 +28,8 @@ def hash_password(password, salt=None):
     hashed = scrypt(
         password, salt=salt, n=(2 ** 15), r=8, p=1, maxmem=(1024 * 1024 * 40), dklen=64
     )
-    encoded_salt = b64encode(salt).decode("utf8")
-    encoded_hashed = b64encode(hashed).decode("utf8")
+    encoded_salt = b64encode(salt).decode("utf-8")
+    encoded_hashed = b64encode(hashed).decode("utf-8")
 
     # Return modular crypt format. Not a standard but guess something close.
     # Where "$scrypt" indicates the algorithm and "-0" indicates

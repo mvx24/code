@@ -2,10 +2,10 @@ import json
 import os
 from mimetypes import guess_type
 
-from app import settings
+from utils.http import decode_response
 
 
-async def bunny(session, endpoint, data, storage=False):
+async def bunny(session, endpoint, data=None, storage=False):
     access_key = os.getenv("BUNNYCDN_ACCESS_KEY")
     storage_access_key = os.getenv("BUNNYCDN_STORAGE_ACCESS_KEY")
     assert access_key
@@ -20,18 +20,18 @@ async def bunny(session, endpoint, data, storage=False):
     }
     if data:
         if isinstance(data, str):
-            data = data.encode("utf8")
+            data = data.encode("utf-8")
         elif not isinstance(data, (str, bytes)):
-            data = json.dumps(data).encode("utf8")
+            data = json.dumps(data).encode("utf-8")
             headers["Content-Type"] = "application/json"
         elif storage and isinstance(data, bytes):
             headers["Content-Type"] = guess_type(endpoint)
         if storage:
             async with session.put(url, headers=headers, data=data) as response:
-                return await response.json()
+                return await decode_response(response)
         else:
             async with session.post(url, headers=headers, data=data) as response:
-                return await response.json()
+                return await decode_response(response)
     else:
         async with session.get(url, headers=headers) as response:
-            return await response.json()
+            return await decode_response(response)

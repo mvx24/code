@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 
 const dotenv = require('dotenv');
 const webpack = require('webpack');
@@ -222,7 +223,7 @@ module.exports = (env, argv) => {
   // Set the html and define plugin variables
   if (htmlPlugin) {
     Object.assign(htmlPlugin.options.templateParameters, envVars);
-    htmlPlugin.options.templateParameters.url = pathname => path.join(output.publicPath, pathname);
+    htmlPlugin.options.templateParameters.resolve = to => url.resolve(output.publicPath, to);
   }
   plugins.push(new webpack.DefinePlugin({ 'process.env': envVarsJs }));
 

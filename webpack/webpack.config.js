@@ -3,7 +3,6 @@
  * file loaders and webpack-symmetric backend proxy.
  */
 
-/* global process, __dirname */
 const fs = require('fs');
 const path = require('path');
 
@@ -223,6 +222,7 @@ module.exports = (env, argv) => {
   // Set the html and define plugin variables
   if (htmlPlugin) {
     Object.assign(htmlPlugin.options.templateParameters, envVars);
+    htmlPlugin.options.templateParameters.url = pathname => path.join(output.publicPath, pathname);
   }
   plugins.push(new webpack.DefinePlugin({ 'process.env': envVarsJs }));
 

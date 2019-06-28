@@ -56,8 +56,14 @@ const Router = ({ children }) => {
     const { target } = e;
     if (target && target.href && target.href.substr(0, origin.length) === origin) {
       const pathname = target.href.substr(origin.length);
-      routerRef.current = matchPath(pathname);
-      history.pushState(null, 'New State', pathname);
+      history.pushState(null, '', pathname);
+      routerRef.current = matchPath(
+        pathname
+          .split('?')
+          .shift()
+          .split('#')
+          .shift(),
+      );
       e.preventDefault();
       e.stopPropagation();
     }

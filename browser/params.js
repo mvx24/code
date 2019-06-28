@@ -18,7 +18,7 @@ export function parseQueryString(str) {
   return params;
 }
 
-export const getURLParameter = getQueryStringValue.bind(null, window.location.search);
-export const getHashParameter = getQueryStringValue.bind(null, window.location.hash);
-export const getURLParameters = parseQueryString.bind(null, window.location.search);
-export const getHashParameters = parseQueryString.bind(null, window.location.hash);
+export const getURLParameter = p => getQueryStringValue(window.location.search, p);
+export const getHashParameter = p => getQueryStringValue(window.location.hash, p);
+export const getURLParameters = () => parseQueryString(window.location.search);
+export const getHashParameters = () => parseQueryString(window.location.hash);

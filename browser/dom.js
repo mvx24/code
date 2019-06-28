@@ -80,7 +80,7 @@ function render(vnode, target, rerender, insideSvg) {
           const replacement = value(ref);
           if (replacement) return render(replacement, target, rerender, insideSvg);
         }
-      } else {
+      } else if (value) {
         if (isSvg && xlinkAttrs[attr]) {
           el.setAttributeNS(xlinkNamespace, attr, value);
         } else if (isSvg && attr === 'lang') {

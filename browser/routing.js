@@ -38,6 +38,17 @@ function matchPath(path) {
   return defaultRoute;
 }
 
+function navigate(pathname) {
+  history.pushState(null, '', pathname);
+  routerRef.current = matchPath(
+    pathname
+      .split('?')
+      .shift()
+      .split('#')
+      .shift(),
+  );
+}
+
 const Router = ({ children }) => {
   children.forEach(child => {
     child.attributes = child.attributes || {};
@@ -55,15 +66,7 @@ const Router = ({ children }) => {
   document.addEventListener('click', e => {
     const { target } = e;
     if (target && target.href && target.href.substr(0, origin.length) === origin) {
-      const pathname = target.href.substr(origin.length);
-      history.pushState(null, '', pathname);
-      routerRef.current = matchPath(
-        pathname
-          .split('?')
-          .shift()
-          .split('#')
-          .shift(),
-      );
+      navigate(target.href.substr(origin.length));
       e.preventDefault();
       e.stopPropagation();
     }
@@ -85,4 +88,4 @@ const Router = ({ children }) => {
   return component;
 };
 
-export { Router, routerRef, routerParams };
+export { navigate, Router, routerRef, routerParams };

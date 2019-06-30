@@ -18,6 +18,11 @@ export function parseQueryString(str) {
   return params;
 }
 
+export const createQueryString = data =>
+  Object.keys(data)
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`)
+    .join('&');
+
 export const getURLParameter = p => getQueryStringValue(window.location.search, p);
 export const getHashParameter = p => getQueryStringValue(window.location.hash, p);
 export const getURLParameters = () => parseQueryString(window.location.search);

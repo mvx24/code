@@ -1,9 +1,11 @@
 import { h, createRef } from './dom';
+import { parseQueryString } from './params';
 
 const routerRef = createRef();
-const routerParams = {};
 const routes = [];
+let routerParams;
 let defaultRoute = <p>Error: 404</p>;
+
 const port = location.port ? `:${location.port}` : '';
 const origin = location.origin || `${location.protocol}//${location.hostname}${port}`;
 
@@ -21,9 +23,7 @@ function compilePath(path) {
 }
 
 function matchPath(path) {
-  Object.keys(routerParams).forEach(param => {
-    delete routerParams[param];
-  });
+  routerParams = {};
   for (let i = 0; i < routes.length; ++i) {
     const route = routes[i];
     const { regex, params } = route;
@@ -38,15 +38,23 @@ function matchPath(path) {
   return defaultRoute;
 }
 
-function navigate(pathname) {
-  history.pushState(null, '', pathname);
-  routerRef.current = matchPath(
-    pathname
-      .split('?')
-      .shift()
-      .split('#')
-      .shift(),
-  );
+function createState(path, data = {}) {
+  const parts = path.split('?');
+  const query = parts.length > 1 ? parseQueryString(path.substr(parts[0].length)) : {};
+  return { data, route: routerParams, query };
+}
+
+function navigate(path, data) {
+  const [pathname] = path.split('?');
+  if (pathname.toLowerCase() === location.pathname) {
+    const state = createState(path, data || (history.state && history.state.data));
+    history.replaceState(state, '', path);
+  } else {
+    const component = matchPath(path.split('?')[0]);
+    const state = createState(path, data);
+    history.pushState(state, '', path);
+    routerRef.current = component;
+  }
 }
 
 const Router = ({ children }) => {
@@ -63,18 +71,29 @@ const Router = ({ children }) => {
     );
     if (child.attributes.default) defaultRoute = child;
   });
+
   document.addEventListener('click', e => {
     const { target } = e;
     if (target && target.href && target.href.substr(0, origin.length) === origin) {
-      navigate(target.href.substr(origin.length));
+      navigate(target.href.substr(origin.length), Object.assign({}, target.dataset));
       e.preventDefault();
       e.stopPropagation();
     }
   });
+
   window.onpopstate = () => {
     routerRef.current = matchPath(location.pathname);
   };
+
   const component = matchPath(location.pathname);
+  if (!history.state) {
+    const dataEl = document.getElementById('data');
+    if (dataEl) {
+      const path = location.href.substr(origin.length);
+      history.replaceState(createState(path, JSON.parse(dataEl.innerHTML)), '', path);
+    }
+  }
+
   const { ref } = component.attributes;
   component.attributes.ref = el => {
     routerRef(el);
@@ -88,4 +107,4 @@ const Router = ({ children }) => {
   return component;
 };
 
-export { navigate, Router, routerRef, routerParams };
+export { navigate, Router, routerRef };

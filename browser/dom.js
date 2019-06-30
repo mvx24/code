@@ -63,7 +63,7 @@ function render(vnode, target, rerender, insideSvg) {
     : document.createElement(vnode.nodeName || 'div');
   if (vnode.attributes) {
     for (const attr in vnode.attributes) {
-      const value = vnode.attributes[attr];
+      let value = vnode.attributes[attr];
       if (value && typeof value === 'object') {
         for (const key in value) {
           el[attr][key] = value[key];
@@ -81,6 +81,7 @@ function render(vnode, target, rerender, insideSvg) {
           if (replacement) return render(replacement, target, rerender, insideSvg);
         }
       } else if (value) {
+        value = value === true ? '' : value;
         if (isSvg && xlinkAttrs[attr]) {
           el.setAttributeNS(xlinkNamespace, attr, value);
         } else if (isSvg && attr === 'lang') {

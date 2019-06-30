@@ -18,7 +18,7 @@ const logicalAttrs = {
 
 function h(nodeName, attributes, ...childNodes) {
   const children = flatten(childNodes)
-    .filter(c => c !== undefined && c !== null)
+    .filter(c => c !== undefined && c !== null && c !== false)
     .reduce((rc, c) => {
       if (c.nodeName) rc.push(c);
       else if (typeof rc[rc.length - 1] === 'string') rc[rc.length - 1] += String(c);

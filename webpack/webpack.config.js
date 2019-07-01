@@ -35,7 +35,7 @@ const cssLoader = { loader: 'css-loader' };
 const cssModuleLoader = {
   loader: 'css-loader',
   options: {
-    camelCase: true,
+    localsConvention: 'camelCase',
     modules: true,
   },
 };

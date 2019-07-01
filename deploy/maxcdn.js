@@ -9,7 +9,7 @@ const config = {
 };
 
 const error = msg => {
-  console.error(['\033[1;31m', 'Error: ', msg, '\033[0m'].join(''));
+  console.error(['\x1b[1;31m', 'Error: ', msg, '\x1b[0m'].join(''));
   process.exit(1);
 };
 

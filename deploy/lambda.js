@@ -15,9 +15,9 @@ const config = {
 };
 
 const execSync = cmd => childProcess.execSync(cmd, { stdio: [0, 1, 2] });
-const begin = msg => console.log(['\033[1m', msg, '\033[0m'].join(''));
+const begin = msg => console.log(['\x1b[1m', msg, '\x1b[0m'].join(''));
 const error = msg => {
-  console.error(['\033[1;31m', 'Error: ', msg, '\033[0m'].join(''));
+  console.error(['\x1b[1;31m', 'Error: ', msg, '\x1b[0m'].join(''));
   process.exit(1);
 };
 

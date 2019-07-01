@@ -29,12 +29,12 @@ dotenv.config(path.resolve(__dirname, `.env.local`));
 dotenv.config();
 
 const accessKey = process.env.BUNNYCDN_ACCESS_KEY;
-const storageAccessKey = process.env.BUNNYCDN_STORAGE_ACCESS_KEY;
+const buildStorageAccessKey = process.env.BUNNYCDN_STORAGE_ACCESS_KEY;
 const sourceMapStorageAccessKey = process.env.BUNNYCDN_SOURCE_MAP_STORAGE_ACCESS_KEY;
 
 if (!config.zoneId) error('No BunnyCDN zoneId specified');
 if (!accessKey) error('No BunnyCDN credentials found in environment variables');
-if (config.storageZone && !storageAccessKey) {
+if (config.storageZone && !buildStorageAccessKey) {
   error('No BunnyCDN storage credentials found in environment variables');
 }
 if (config.sourceMapStorageZone && !sourceMapStorageAccessKey) {
@@ -144,19 +144,23 @@ if (config.storageZone) {
     // Cleanup by deleting the old deployment within the bucket(s)
     begin(`Deleting old files from ${config.storageZone}:`);
     if (config.storageZone === config.sourceMapStorageZone) {
-      return deleteFiles(config.storageZone, storageAccessKey, [...buildFiles, ...sourceMapFiles]);
+      return deleteFiles(config.storageZone, buildStorageAccessKey, [
+        ...buildFiles,
+        ...sourceMapFiles,
+      ]);
     }
-    return deleteFiles(config.storageZone, storageAccessKey, buildFiles).then(() => {
+    return deleteFiles(config.storageZone, buildStorageAccessKey, buildFiles).then(() => {
       if (config.sourceMapStorageZone) {
         begin(`Deleting old files from ${config.sourceMapStorageZone}:`);
         return deleteFiles(config.sourceMapStorageZone, sourceMapStorageAccessKey, sourceMapFiles);
       }
+      return null;
     });
   };
 
   // Upload the build
   begin(`Uploading to ${config.storageZone}:`);
-  putFiles(config.storageZone, storageAccessKey, buildFiles)
+  putFiles(config.storageZone, buildStorageAccessKey, buildFiles)
     .then(() => {
       // Upload the source maps
       if (config.sourceMapStorageZone) {

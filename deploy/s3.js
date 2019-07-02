@@ -27,9 +27,9 @@ const error = msg => {
 };
 
 // Read in .env files and check for credentials
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
-dotenv.config(path.resolve(__dirname, `.env.local`));
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`) });
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}`) });
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 dotenv.config();
 
 if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {

@@ -28,9 +28,9 @@ const error = msg => {
 };
 
 // Read in .env files
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
-dotenv.config(path.resolve(__dirname, `.env.local`));
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`) });
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}`) });
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 dotenv.config();
 if (!process.env.B2_APPLICATION_KEY_ID || !process.env.B2_APPLICATION_KEY) {
   error('No Backblaze credentials found in environment variables');

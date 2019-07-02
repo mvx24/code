@@ -103,9 +103,9 @@ module.exports = (env, argv) => {
 
   // Setup process.env from the mode and env files
   if (!process.env.NODE_ENV) process.env.NODE_ENV = argv.mode;
-  dotenv.config(path.resolve(__dirname, `.env.${mode}.local`));
-  dotenv.config(path.resolve(__dirname, `.env.${mode}`));
-  dotenv.config(path.resolve(__dirname, `.env.local`));
+  dotenv.config({ path: path.resolve(__dirname, `.env.${mode}.local`) });
+  dotenv.config({ path: path.resolve(__dirname, `.env.${mode}`) });
+  dotenv.config({ path: path.resolve(__dirname, '.env.local') });
   dotenv.config();
 
   // Development vs Production configurations

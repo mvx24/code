@@ -13,11 +13,10 @@ const error = msg => {
   process.exit(1);
 };
 
-
 // Read in .env files
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
-dotenv.config(path.resolve(__dirname, `.env.local`));
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`) });
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}`) });
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 dotenv.config();
 
 if (!config.companyAlias || !config.zoneId) error('No MaxCDN companyAlias or zoneId specified');

@@ -23,9 +23,9 @@ const error = msg => {
 };
 
 // Read in .env files
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`));
-dotenv.config(path.resolve(__dirname, `.env.${process.env.NODE_ENV}`));
-dotenv.config(path.resolve(__dirname, `.env.local`));
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`) });
+dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}`) });
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 dotenv.config();
 
 const accessKey = process.env.BUNNYCDN_ACCESS_KEY;

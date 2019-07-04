@@ -123,7 +123,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         query = cls.table.select().where(clause_or_row_id)
         result = await database.fetch_one(query)
         obj = result
-        if parse:
+        if parse and obj:
             obj = cls.parse_row(obj)
         return obj
 

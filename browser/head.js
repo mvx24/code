@@ -1,9 +1,10 @@
 import { h, render } from './dom';
 
+const renderedMeta = document.querySelector('meta[name="head"]');
 let root = null;
-let count = 0;
+let count = renderedMeta ? parseInt(renderedMeta.getAttribute('content')) : 0;
 
-function renderHead(children) {
+function renderHead(meta, children) {
   const currentRoot = root || document.querySelector('title');
   const fragment = document.createDocumentFragment();
   children.forEach(c => render(c, fragment));
@@ -16,8 +17,11 @@ function renderHead(children) {
   root = fragment.firstElementChild;
   count = fragment.childElementCount;
   currentRoot.parentElement.replaceChild(fragment, currentRoot);
+  meta.setAttribute('content', count);
 }
 
-const Head = ({ children }) => <meta name="head" callback={() => renderHead(children)} />;
+const Head = ({ children }) => (
+  <meta name="head" callback={ref => renderHead(ref.current, children)} />
+);
 
 export default Head;

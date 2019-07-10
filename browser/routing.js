@@ -47,7 +47,7 @@ function createState(path, data = {}) {
 function navigate(path, data) {
   const [pathname] = path.split('?');
   if (pathname.toLowerCase() === location.pathname) {
-    const state = createState(path, data || (history.state && history.state.data));
+    const state = createState(path, data || history.state.data);
     history.replaceState(state, '', path);
   } else {
     const component = matchPath(path.split('?')[0]);
@@ -74,10 +74,13 @@ const Router = ({ children }) => {
 
   document.addEventListener('click', e => {
     const { target } = e;
-    if (target && target.href && target.href.substr(0, origin.length) === origin) {
-      navigate(target.href.substr(origin.length), Object.assign({}, target.dataset));
-      e.preventDefault();
-      e.stopPropagation();
+    for (let el = target; el && el.nodeType === Node.ELEMENT_NODE; el = el.parentElement) {
+      if (el && el.href && el.href.substr(0, origin.length) === origin) {
+        navigate(el.href.substr(origin.length), Object.assign({}, el.dataset));
+        e.preventDefault();
+        e.stopPropagation();
+        break;
+      }
     }
   });
 
@@ -88,10 +91,8 @@ const Router = ({ children }) => {
   const component = matchPath(location.pathname);
   if (!history.state) {
     const dataEl = document.getElementById('data');
-    if (dataEl) {
-      const path = location.href.substr(origin.length);
-      history.replaceState(createState(path, JSON.parse(dataEl.innerHTML)), '', path);
-    }
+    const path = location.href.substr(origin.length);
+    history.replaceState(createState(path, dataEl ? JSON.parse(dataEl.innerHTML) : {}), '', path);
   }
 
   const { ref } = component.attributes;

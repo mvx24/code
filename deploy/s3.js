@@ -11,6 +11,29 @@ const AWS = require('aws-sdk');
 // https://gitlab.com/help/ci/variables/README
 // NOTE: This script won't gzip because the CDN should handle that
 
+// Be sure to use a IAM policy that allows actions on both bucket and bucket objects:
+// {
+//   "Version": "2012-10-17",
+//   "Statement": [
+//       {
+//           "Sid": "VisualEditor0",
+//           "Effect": "Allow",
+//           "Action": [
+//               "s3:PutObject",
+//               "s3:GetObjectAcl",
+//               "s3:GetObject",
+//               "s3:ListBucket",
+//               "s3:DeleteObject",
+//               "s3:PutObjectAcl"
+//           ],
+//           "Resource": [
+//               "arn:aws:s3:::bucket-name/*",
+//               "arn:aws:s3:::bucket-name"
+//           ]
+//       }
+//   ]
+// }
+
 // Configure the deployment using the following
 // sourceMapBucket must be set to deploy source maps - can be same as bucket
 const config = {
@@ -25,6 +48,7 @@ const error = msg => {
   console.error(['\x1b[1;31m', 'Error: ', msg, '\x1b[0m'].join(''));
   process.exit(1);
 };
+const end = () => log(`\u{1f680}  Deloyed to S3 successfully!`);
 
 // Read in .env files and check for credentials
 dotenv.config({ path: path.resolve(__dirname, `.env.${process.env.NODE_ENV}.local`) });
@@ -65,7 +89,7 @@ function putFiles(s3, files, i, cb) {
       } else {
         log(`\u{2705}  ${key}`);
         if (i < files.length - 1) {
-          putFiles(files, i + 1);
+          putFiles(s3, files, i + 1, cb);
         } else if (cb) {
           cb();
         }
@@ -75,6 +99,7 @@ function putFiles(s3, files, i, cb) {
 }
 
 function deleteFiles(s3, excludeFiles, cb) {
+  const excludeObjects = excludeFiles.map(ex => ex.substr(buildDir.length + 1));
   s3.listObjects({}, (err, data) => {
     if (err) {
       error(err);
@@ -82,19 +107,19 @@ function deleteFiles(s3, excludeFiles, cb) {
       const files = data.Contents;
       const deleteFile = i => {
         const { Key: fileName } = files[i];
-        if (excludeFiles.indexOf(fileName) === -1) {
+        if (excludeObjects.indexOf(fileName) === -1) {
           s3.deleteObject({ Bucket: s3.config.params.Bucket, Key: fileName }, delErr => {
             if (delErr) {
               error(delErr);
             } else {
               log(`\u{274c}  ${fileName}`);
-              if (i < files.length - 1) {
-                deleteFile(i + 1);
-              } else if (cb) {
-                cb();
-              }
             }
           });
+        }
+        if (i < files.length - 1) {
+          deleteFile(i + 1);
+        } else if (cb) {
+          cb();
         }
       };
       deleteFile(0);
@@ -117,12 +142,14 @@ function cleanupBuckets() {
   // Cleanup by deleting the old deployment within the bucket(s)
   begin(`Deleting old files from ${config.bucket}:`);
   if (config.bucket === config.sourceMapBucket) {
-    deleteFiles(buildS3, [...buildFiles, ...sourceMapFiles]);
+    deleteFiles(buildS3, [...buildFiles, ...sourceMapFiles], end);
   } else {
     deleteFiles(buildS3, buildFiles, () => {
       if (config.sourceMapBucket) {
         begin(`Deleting old files from ${config.sourceMapBucket}:`);
-        deleteFiles(sourceMapS3, sourceMapFiles);
+        deleteFiles(sourceMapS3, sourceMapFiles, end);
+      } else {
+        end();
       }
     });
   }

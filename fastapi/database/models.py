@@ -97,7 +97,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         """
         values = self.dict()
         values.update(new_values)
-        self.__values__.update(validate_model(self, values))
+        self.__values__.update(validate_model(self, values)[0])
 
     @classmethod
     def parse_row(cls, row):

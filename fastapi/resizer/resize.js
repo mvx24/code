@@ -67,17 +67,17 @@ function resize(inputPath, sizes) {
               [resizeOpts.width, resizeOpts.height] = limit;
             }
             promises.push(
-              new Promise((resolve, reject) => {
+              new Promise((subresolve, subreject) => {
                 normalizedImage
                   .rotate()
                   .resize(resizeOpts)
                   .jpeg({ progressive })
-                  .toFile(outputPath, err => {
-                    if (err) {
-                      reject(err);
+                  .toFile(outputPath, suberr => {
+                    if (suberr) {
+                      subreject(suberr);
                       return;
                     }
-                    resolve();
+                    subresolve();
                   });
               }),
             );

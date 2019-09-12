@@ -27,18 +27,20 @@ async function handler(event) {
         Bucket: bucket,
       },
     });
-    s3.getObject({ Key }, (err, res) => {
+    s3.getObject({ Key }, (err, obj) => {
       if (err) {
         reject(err);
         return;
       }
       const tmpFile = path.join('/tmp', Key);
-      const { webhook } = res.Metadata;
-      const webhookPost = (err, meta) => {
-        if (!webhook && err) return Promise.reject(err);
+      const { webhook } = obj.Metadata;
+      const webhookPost = (error, meta) => {
+        if (!webhook && error) return Promise.reject(error);
         if (!webhook && meta) return Promise.resolve(meta);
-        return new Promise((resolve, reject) => {
-          const body = err ? JSON.stringify({ error: err.message }) : JSON.stringify({ meta });
+        return new Promise((subresolve, subreject) => {
+          const body = error
+            ? JSON.stringify({ erroror: error.message })
+            : JSON.stringify({ meta });
           const options = {
             Accept: 'application/json',
             headers: {},
@@ -48,25 +50,25 @@ async function handler(event) {
           };
           const req = https.request(webhook, options, res => {
             const { statusCode } = res;
-            if (statusCode >= 400) reject(`Request Failed.\nStatus Code: ${statusCode}`);
-            res.on('end', resolve);
-            res.on('error', reject);
+            if (statusCode >= 400) subreject(`Request Failed.\nStatus Code: ${statusCode}`);
+            res.on('end', subresolve);
+            res.on('error', subreject);
           });
-          req.on('error', reject);
+          req.on('error', subreject);
           req.write(body);
           req.end();
         });
       };
 
       // Save the file and do the resizing
-      fs.writeFile(tmpFile, res.Body, err => {
-        if (err) {
-          reject(err);
+      fs.writeFile(tmpFile, obj.Body, writeErr => {
+        if (writeErr) {
+          reject(writeErr);
           return;
         }
         resize(tmpFile, process.env.SIZES.split(','))
           .then(meta => webhookPost(null, meta).then(resolve, reject))
-          .catch(err => webhookPost(err, null).then(resolve, reject));
+          .catch(error => webhookPost(error, null).then(resolve, reject));
       });
     });
   });

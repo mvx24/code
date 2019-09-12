@@ -9,4 +9,4 @@ COPY . .
 RUN yarn install --production
 
 ENV NODE_ENV production
-ENTRYPOINT ["node", "/opt/render-server/index.js"]
+ENTRYPOINT ["node", "/opt/resizer/index.js"]

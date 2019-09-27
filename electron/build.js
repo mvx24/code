@@ -7,6 +7,15 @@ const pkg = require(path.resolve('./package.json'));
 console.log('Building bundles...');
 childProcess.execSync('rollup -c', { stdio: [0, 1, 2] });
 
+// chdir into build
+process.chdir(path.resolve('./build'));
+
+// Install electron and get the package info
+fs.writeFileSync(path.resolve('./package.json'), '{}');
+childProcess.execSync('yarn add --dev electron', { stdio: [0, 1, 2] });
+const buildPkg = require(path.resolve('./package.json'));
+const electronPkg = require(path.resolve('./node_modules/electron/package.json'));
+
 // Create a minimal package.json file
 const minPkg = {
   name: pkg.name,
@@ -19,14 +28,17 @@ const minPkg = {
   license: pkg.license,
   main: pkg.main,
   build: pkg.build,
+  electronVersion: electronPkg.version,
+  devDependencies: buildPkg.devDependencies,
 };
-fs.writeFileSync(path.resolve('./build/package.json'), JSON.stringify(minPkg, null, 2));
+fs.writeFileSync(path.resolve('./package.json'), JSON.stringify(minPkg, null, 2));
 console.log('Created build/package.json');
 
 // Copy the required support files
-['./main.js', './index.html'].forEach(file => {
+['../main.js', '../index.html', '../preload.js'].forEach(file => {
   const src = path.resolve(file);
   const dest = path.join(path.resolve('./build'), file);
   fs.copyFileSync(src, dest);
   console.log(`cp ${src} -> ${dest}`);
 });
+childProcess.execSync('cp -R lib build/lib', { stdio: [0, 1, 2] });

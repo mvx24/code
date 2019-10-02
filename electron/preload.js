@@ -3,14 +3,14 @@ window.addEventListener('DOMContentLoaded', () => {
     // Setup babel require hooks to translate es6 importing/exporting and jsx
     require('@babel/register');
     // Add a CSS require hook to append CSS files into the app
-    var fs = require('fs');
-    var loadedCSS = {};
+    const fs = require('fs');
+    const loadedCSS = {};
     require.extensions['.css'] = function(module, filename) {
       if (!loadedCSS[filename]) {
         loadedCSS[filename] = true;
-        var css = fs.readFileSync(filename, 'utf8').trim();
+        const css = fs.readFileSync(filename, 'utf8').trim();
         if (css.length) {
-          var style = document.createElement('style');
+          const style = document.createElement('style');
           style.type = 'text/css';
           style.textContent = css;
           document.head.appendChild(style);
@@ -21,7 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
     require('./src');
   } else {
     // Start the app using bundled JS and CSS
-    var link = document.createElement('link');
+    const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'bundle.css';
     document.head.appendChild(link);

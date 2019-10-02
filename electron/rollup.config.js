@@ -2,6 +2,7 @@ const resolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const css = require('rollup-plugin-css-only');
 const commonjs = require('rollup-plugin-commonjs');
+const json = require('rollup-plugin-json');
 const { uglify } = require('rollup-plugin-uglify');
 const pkg = require('./package.json');
 const babelrc = require('./babel.config.js')();
@@ -33,13 +34,14 @@ module.exports = {
     sourcemap: false,
   },
   plugins: [
-    resolve(),
+    resolve({ preferBuiltins: true }),
     babel(
       Object.assign(babelrc, {
         babelrc: false,
-        exclude: 'node_modules/**',
+        exclude: ['node_modules/**', 'lib/**'],
       }),
     ),
+    json({ compact: true }),
     css({ output: 'build/bundle.css' }),
     commonjs({
       // Libraries that export an object instead of named exports

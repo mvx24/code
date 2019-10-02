@@ -41,4 +41,4 @@ console.log('Created build/package.json');
   fs.copyFileSync(src, dest);
   console.log(`cp ${src} -> ${dest}`);
 });
-childProcess.execSync('cp -R lib build/lib', { stdio: [0, 1, 2] });
+childProcess.execSync('cp -R ../lib lib', { stdio: [0, 1, 2] });

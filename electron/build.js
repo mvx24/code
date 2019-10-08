@@ -35,10 +35,26 @@ fs.writeFileSync(path.resolve('./package.json'), JSON.stringify(minPkg, null, 2)
 console.log('Created build/package.json');
 
 // Copy the required support files
-['../main.js', '../index.html', '../preload.js'].forEach(file => {
+[
+  '../main.js',
+  '../index.html',
+  '../preload.js',
+  '../icon.icns',
+  '../icon.png',
+  '../icon.ico',
+  '../background.png',
+  '../background@2x.png',
+].forEach(file => {
   const src = path.resolve(file);
   const dest = path.join(path.resolve('./build'), file);
-  fs.copyFileSync(src, dest);
-  console.log(`cp ${src} -> ${dest}`);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, dest);
+    console.log(`cp ${src} -> ${dest}`);
+  }
 });
-childProcess.execSync('cp -R ../lib lib', { stdio: [0, 1, 2] });
+try {
+  childProcess.execSync('cp -R ../lib lib', { stdio: [0, 1, 2] });
+} catch (e) {}
+try {
+  childProcess.execSync('cp -R ../icons icons', { stdio: [0, 1, 2] });
+} catch (e) {}

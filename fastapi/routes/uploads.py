@@ -14,7 +14,9 @@ from utils.uploads import create_b2_upload_url, create_s3_upload_url
 async def get_upload_url(key: str = None, _: User = Depends(current_user)):
     if settings.UPLOAD_BUCKET:
         if settings.UPLOAD_BUCKET_PROVIDER == "b2":
-            return await create_b2_upload_url(settings.UPLOAD_BUCKET)
+            return await create_b2_upload_url(
+                settings.UPLOAD_BUCKET, key or str(uuid4())
+            )
         elif settings.UPLOAD_BUCKET_PROVIDER == "s3":
             return await create_s3_upload_url(
                 settings.UPLOAD_BUCKET, key or str(uuid4())

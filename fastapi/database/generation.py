@@ -71,7 +71,6 @@ from pydantic.types import (
     IPvAnyAddress,
     IPvAnyInterface,
     IPvAnyNetwork,
-    Json,
     StrictStr,
     UrlStr,
     UUID1 as UUID1_Type,
@@ -115,7 +114,7 @@ from sqlalchemy.dialects.postgresql import (
 from app import settings
 from utils.casing import camel_to_snake_case
 from utils.encryption import encrypt, decrypt
-from .types import PasswordStr, EncryptedStr, ForeignKeyAction
+from .types import Json, PasswordStr, EncryptedStr, ForeignKeyAction
 
 __all__ = ["generate_table"]
 
@@ -234,8 +233,10 @@ def map_type(type_):
         # https://github.com/sqlalchemy/sqlalchemy/blob/master/lib/sqlalchemy/dialects/postgresql/pg8000.py#L129
         as_uuid = settings.DB_DRIVERNAME == "postgresql+pg8000"
         sql_type = UUID(as_uuid=as_uuid)
-    elif issubclass(type_, Path) or issubclass(type_, UrlStr):
-        # URLS may be 65536 in length and paths don't seem to have a limit
+    elif issubclass(type_, UrlStr):
+        sql_type = VARCHAR(type_.max_length)
+    elif issubclass(type_, Path):
+        # Paths don't seem to have a length limit so use TEXT
         sql_type = TEXT
     elif type_ is IPvAnyAddress or type_ is IPvAnyInterface:
         sql_type = INET

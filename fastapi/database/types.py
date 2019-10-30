@@ -6,7 +6,14 @@ import re
 from enum import Enum
 from typing import Dict
 
-from pydantic import PositiveInt, constr, ConstrainedStr, UUID4
+from pydantic import (
+    PositiveInt,
+    constr,
+    ConstrainedStr,
+    UUID4,
+    urlstr,
+    PydanticTypeError,
+)
 from pydantic.class_validators import make_generic_validator
 
 from app import settings
@@ -20,6 +27,29 @@ else:
     PrimaryKey = PositiveInt
 ForeignKey = PrimaryKey
 HStore = Dict[str, str]
+HttpUrl = urlstr(min_length=0, max_length=2083, schemes={"http", "https"})
+
+
+class JsonTypeError(PydanticTypeError):
+    msg_template = "Json must be a dict, list, int, float, str, or None"
+
+
+class Json(type):
+    """
+    Unlike the pydantic Json type, this does not force new values to be unparsed JSON strings,
+    but rather new values should be a primative data type that can be serialized to JSON.
+    """
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+        if value is not None:
+            if not isinstance(value, (dict, list, int, float, str)):
+                raise JsonTypeError
+        return value
 
 
 class ForeignKeyAction(str, Enum):

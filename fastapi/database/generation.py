@@ -60,6 +60,7 @@ single object (as in ForeignKey and One-to-One relationships), otherwise it will
 from datetime import datetime, date, time, timedelta
 from enum import Enum
 from pathlib import Path
+from typing import get_type_hints
 from uuid import UUID as UUID_Type
 
 # https://github.com/samuelcolvin/pydantic/blob/master/pydantic/types.py
@@ -111,7 +112,7 @@ from sqlalchemy.dialects.postgresql import (
     VARCHAR,
 )
 
-from app import settings
+from app import settings, Env
 from utils.casing import camel_to_snake_case
 from utils.encryption import encrypt, decrypt
 from .types import Json, PasswordStr, EncryptedStr, ForeignKeyAction
@@ -158,7 +159,19 @@ def map_type(type_):
     sql_type = None
 
     # Map the type to a sql alchemy postgres type
-    if type_ is str:
+    if hasattr(type_, "__origin__"):
+        # List, Tuple, Set, and Dict from typing module
+        # Assumed to only allow one subtype at a time
+        # This matching is first because these typings
+        # raise an exception when passed to issubclass()
+        if issubclass(type_.__origin__, (list, tuple, set)):
+            sql_type = ARRAY(map_type(type_.__args__[0]))
+        if issubclass(type_.__origin__, dict):
+            if type_.__args__ == (str, str):
+                sql_type = HSTORE
+            else:
+                sql_type = JSON
+    elif type_ is str:
         sql_type = TEXT
     elif type_ is int:
         sql_type = INTEGER
@@ -173,16 +186,6 @@ def map_type(type_):
         sql_type = ARRAY(VARCHAR(255))
     elif issubclass(type_, Decimal):
         sql_type = NUMERIC
-    elif hasattr(type_, "__origin__"):
-        # List, Tuple, Set, and Dict from typing module
-        # Assumed to only allow one subtype at a time
-        if issubclass(type_.__origin__, (list, tuple, set)):
-            sql_type = ARRAY(map_type(type_.__args__[0]))
-        if issubclass(type_.__origin__, dict):
-            if type_.__args__ == (str, str):
-                sql_type = HSTORE
-            else:
-                sql_type = JSON
     elif issubclass(type_, Enum) and type_ in ENUM_CACHE:
         sql_type = ENUM_CACHE[type_]
     elif type_ is datetime:
@@ -249,9 +252,8 @@ def map_type(type_):
     return sql_type
 
 
-def generate_column(table_name, field):
+def generate_column(table_name, field, type_):
     name = field.name
-    type_ = field.type_
     sql_type = map_type(type_)
     args = []
     kwargs = {"nullable": False}
@@ -324,13 +326,24 @@ def generate_table(model, metadata):
     columns = []
     schema_items = []
     table_name = camel_to_snake_case(name)
-    for field in model.__fields__.values():
+    for key, field in model.__fields__.items():
         # Enums need to be created as special sql types so check for them first here
-        if issubclass(field.type_, Enum) and field.type_ not in ENUM_CACHE:
-            enums = [o.value for o in field.type_]
-            enum_name = camel_to_snake_case(field.type_.__name__)
-            ENUM_CACHE[field.type_] = ENUM(*enums, name=enum_name, metadata=metadata)
-        column, items = generate_column(table_name, field)
+        # Alembic migrations do not need this however, so metadata is set to None
+        type_ = get_type_hints(model)[key]
+        if (
+            isinstance(type_, type)
+            and issubclass(type_, Enum)
+            and type_ not in ENUM_CACHE
+        ):
+            enums = [o.value for o in type_]
+            enum_name = camel_to_snake_case(type_.__name__)
+            ENUM_CACHE[type_] = ENUM(
+                *enums,
+                name=enum_name,
+                metadata=None if settings.ENV == Env.MIGRATE else metadata,
+            )
+            print(ENUM_CACHE[type_])
+        column, items = generate_column(table_name, field, type_)
         columns.append(column)
         schema_items.extend(items)
     table = Table(table_name, metadata, *columns, *schema_items)

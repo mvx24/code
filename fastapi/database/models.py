@@ -3,11 +3,11 @@ Implements DbBaseModel, a Pydantic base class for mapping some schema values
 to SQLAlchemy.
 """
 
-from typing import Set, Dict, List
+from typing import get_type_hints, Set, Dict, List
 
 from pydantic import BaseModel, Schema, validate_model
 from sqlalchemy import text
-from sqlalchemy.sql.expression import ClauseElement, Selectable
+from sqlalchemy.sql.expression import ClauseElement, Selectable, union_all, select
 
 from utils.casing import camel_case_dict
 from .engine import database, metadata
@@ -133,9 +133,35 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         Read rows from the database, optionally limited and parsed into model instances.
         """
         if not isinstance(clause_or_select, Selectable):
-            query = cls.table.select().where(clause_or_select)
+            query = cls.table.select()
+            if clause_or_select:
+                query = query.where(clause_or_select)
         else:
             query = clause_or_select
+        if start is not None:
+            query = query.offset(start)
+        if stop is not None:
+            num = stop - (start or 0)
+            query = query.limit(num)
+        rows = await database.fetch_all(query)
+        if parse:
+            rows = cls.parse_rows(rows)
+        return rows
+
+    @classmethod
+    async def union(cls, subclasses, clause=None, parse=False, start=None, stop=None):
+        """
+        Perform a union across multiple subclasses (tables) and combining into a single abstract base class model.
+        """
+        queries = []
+        common = {c.name for c in cls.columns}
+        for subcls in subclasses:
+            columns = [c for c in subcls.columns if c.name in common]
+            query = select(columns)
+            if clause:
+                query = query.where(clause)
+            queries.append(query)
+        query = union_all(*queries)
         if start is not None:
             query = query.offset(start)
         if stop is not None:
@@ -225,7 +251,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             if key not in exclude
         }
         namespace["__annotations__"] = {
-            key: cls.__fields__[key].type_
+            key: get_type_hints(cls)[key]
             for key in cls.__fields__
             if key not in exclude
         }
@@ -271,3 +297,4 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         anystr_strip_whitespace = True
         use_enum_values = True
         validate_assignment = True
+

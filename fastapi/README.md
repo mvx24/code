@@ -18,13 +18,6 @@ To autogenerate a migration use the following:
 
 `alembic revision --autogenerate -m "Some message"`
 
-- Then add extensions to this first migration:
-
-```
-    op.execute('CREATE EXTENSION IF NOT EXISTS "hstore";')
-    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
-```
-
 TO migrate a database to the most recent revision:
 
 `alembic upgrade head`

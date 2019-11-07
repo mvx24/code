@@ -44,6 +44,7 @@ console.log('Created build/package.json');
   '../icon.ico',
   '../background.png',
   '../background@2x.png',
+  '../entitlements.mac.plist',
 ].forEach(file => {
   const src = path.resolve(file);
   const dest = path.join(path.resolve('./build'), file);

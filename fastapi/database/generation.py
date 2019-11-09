@@ -327,6 +327,8 @@ def generate_table(model, metadata):
     schema_items = []
     table_name = camel_to_snake_case(name)
     for key, field in model.__fields__.items():
+        if field.schema.extra.get("computed"):
+            continue
         # Enums need to be created as special sql types so check for them first here
         # Alembic migrations do not need this however, so metadata is set to None
         type_ = get_type_hints(model)[key]

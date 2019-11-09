@@ -5,8 +5,8 @@ to SQLAlchemy.
 
 from typing import get_type_hints, Set, Dict, List
 
-from pydantic import BaseModel, Schema, validate_model
-from sqlalchemy import text
+from pydantic import BaseModel, Schema, validate_model, validator
+from sqlalchemy import text, literal_column, String
 from sqlalchemy.sql.expression import ClauseElement, Selectable, union_all, select
 
 from utils.casing import camel_case_dict
@@ -14,7 +14,7 @@ from .engine import database, metadata
 from .generation import generate_table
 from .types import PrimaryKey
 
-__all__ = ["DbBaseModel"]
+__all__ = ["DbBaseModel", "AbstractDbBaseModel"]
 
 
 MetaModel = type(BaseModel)
@@ -30,8 +30,18 @@ class DbMetaModel(MetaModel):
         cls._write_only = set()
         cls._read_only = set()
         cls._read_only_defaults = dict()
+        cls._computed = set()
         cls._auto_now = set()
         cls._auto_now_add = set()
+
+        # Remove the _type/subclass_name field from AbstractDbBaseModel
+        # as this will be a non-abstract class
+        if hasattr(cls, "__fields__"):
+            if "subclass_name" in cls.__fields__:
+                del cls.__fields__["subclass_name"]
+        if hasattr(cls, "__validators__"):
+            if "subclass_name" in cls.__validators__:
+                del cls.__validators__["subclass_name"]
 
         # Translate extra keys of each field Schema because openapi json expects camelCase
         if hasattr(cls, "__fields__"):
@@ -56,6 +66,8 @@ class DbMetaModel(MetaModel):
                     # so don't use it for INSERTs
                     if field.default is not None:
                         cls._read_only_defaults[field.name] = field.default
+                if field.schema.extra.get("computed"):
+                    cls._computed.add(field.name)
 
         super().__init__(_name, _bases, _dct)
 
@@ -114,7 +126,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return [cls.parse_row(r) for r in rows]
 
     @classmethod
-    async def get(cls, clause_or_row_id, parse=False):
+    async def get(cls, clause_or_row_id, parse=True):
         """
         Get a single model from the database based on id.
         """
@@ -128,40 +140,16 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return obj
 
     @classmethod
-    async def read(cls, clause_or_select=None, parse=False, start=None, stop=None):
+    async def read(cls, clause_or_select=None, start=None, stop=None, parse=True):
         """
         Read rows from the database, optionally limited and parsed into model instances.
         """
         if not isinstance(clause_or_select, Selectable):
             query = cls.table.select()
-            if clause_or_select:
+            if clause_or_select is not None:
                 query = query.where(clause_or_select)
         else:
             query = clause_or_select
-        if start is not None:
-            query = query.offset(start)
-        if stop is not None:
-            num = stop - (start or 0)
-            query = query.limit(num)
-        rows = await database.fetch_all(query)
-        if parse:
-            rows = cls.parse_rows(rows)
-        return rows
-
-    @classmethod
-    async def union(cls, subclasses, clause=None, parse=False, start=None, stop=None):
-        """
-        Perform a union across multiple subclasses (tables) and combining into a single abstract base class model.
-        """
-        queries = []
-        common = {c.name for c in cls.columns}
-        for subcls in subclasses:
-            columns = [c for c in subcls.columns if c.name in common]
-            query = select(columns)
-            if clause:
-                query = query.where(clause)
-            queries.append(query)
-        query = union_all(*queries)
         if start is not None:
             query = query.offset(start)
         if stop is not None:
@@ -184,9 +172,9 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         cls = self.__class__
         table = cls.table
         if not read_only:
-            exclude = {"id", *cls._read_only}
+            exclude = {"id", *cls._read_only, *cls._computed}
         else:
-            exclude = {"id"}
+            exclude = {"id", *cls._computed}
         if update_values:
             if not read_only:
                 self.assign(
@@ -298,3 +286,71 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         use_enum_values = True
         validate_assignment = True
 
+        # Revert config from a AbstractDbBaseModel base class
+        allow_population_by_alias = False
+
+
+class AbstractDbBaseModel(BaseModel):
+    """
+    Abstract base model for utilizing a common set of fields for different models and
+    easily selecting them all together with a union operation.
+    """
+
+    # Fields when using this model to return parsed results from union()
+    id: PrimaryKey = Schema(None, read_only=True)
+    subclass_name: str = Schema("", alias="_type", computed=True)
+
+    @validator("subclass_name", pre=True, always=True)
+    def set_type_from_name(cls, value):
+        return value or cls.__name__
+
+    class Config:
+        # pylint: disable=too-few-public-methods
+
+        # The _type literal column doesn't work without this
+        # and referencing subclass_name from the query won't work
+        allow_population_by_alias = True
+
+    @classmethod
+    def parse_row(cls, row):
+        """
+        Convenience method for generating new instance from a RowProxy.
+        """
+        return cls(**{key: row[key] for key in row.keys()})
+
+    @classmethod
+    def parse_rows(cls, rows):
+        """
+        Convenience method for generating a list of new instances from a ResultProxy.
+        """
+        return [cls.parse_row(r) for r in rows]
+
+    @classmethod
+    async def union(cls, subclasses, clauses=None, start=None, stop=None, parse=True):
+        """
+        Perform a union across multiple subclasses (tables) and combining into a single abstract base class model.
+        """
+        queries = []
+        common = {f.name for f in cls.__fields__.values()}
+        for i, subcls in enumerate(subclasses):
+            columns = [c for c in subcls.columns if c.name in common]
+            columns.append(
+                literal_column(f"'{subcls.__name__}'", String).label("_type")
+            )
+            query = select(columns)
+            if clauses is not None:
+                if isinstance(clauses, (list, tuple)):
+                    query = query.where(clauses[i])
+                else:
+                    query = query.where(clauses)
+            queries.append(query)
+        query = union_all(*queries)
+        if start is not None:
+            query = query.offset(start)
+        if stop is not None:
+            num = stop - (start or 0)
+            query = query.limit(num)
+        rows = await database.fetch_all(query)
+        if parse:
+            rows = cls.parse_rows(rows)
+        return rows

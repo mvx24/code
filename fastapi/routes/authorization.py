@@ -3,7 +3,7 @@ from datetime import timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.oauth2 import OAuth2PasswordRequestFormStrict
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from app import settings
@@ -19,6 +19,11 @@ class Token(BaseModel):
     token_type: str
     expires_in: int
     refresh_token: str = None
+
+    @validator("expires_in", pre=True, always=True)
+    def convert_timedelta(cls, v):
+        if isinstance(v, timedelta):
+            return int(v.total_seconds())
 
 
 @app.post("/oauth/authorize", response_model=Token)

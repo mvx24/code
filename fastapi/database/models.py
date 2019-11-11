@@ -223,8 +223,13 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
     def response_model(
         cls, name=None, remove: Set[str] = None, embed: Dict[str, BaseModel] = None
     ):
+        # Return the same model if there is no field changes
+        if not remove and not embed and not cls._write_only:
+            return cls
+        # Return the basic cached version if only _write_only changes are needed
         if not remove and not embed and cls._response_model:
             return cls._response_model
+
         if not name:
             name = cls.__name__
         if not remove:

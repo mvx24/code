@@ -6,7 +6,7 @@ to SQLAlchemy.
 from typing import get_type_hints, Set, Dict, List
 
 from pydantic import BaseModel, Schema, validate_model, validator
-from sqlalchemy import text, literal_column, String
+from sqlalchemy import text, literal_column, String, func
 from sqlalchemy.sql.expression import ClauseElement, Selectable, union_all, select
 
 from utils.casing import camel_case_dict
@@ -218,6 +218,13 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         query = table.delete().where(table.c.id == self.id)
         await database.execute(query)
         return self
+
+    @classmethod
+    async def count(cls, clause=None):
+        query = select([func.count()]).select_from(cls.table)
+        if isinstance(clause, ClauseElement):
+            query = query.where(clause)
+        return await database.fetch_val(query)
 
     @classmethod
     def response_model(

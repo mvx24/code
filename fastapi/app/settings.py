@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ENV: Env = Env.DEVELOPMENT
     PRIMARY_KEY_AS_UUID: bool = False
     SECRET_KEY: str
-    ALLOWED_HOSTS: str = None
+    ALLOWED_HOSTS: List[str] = None
     GZIP_THRESHOLD: int = 2048
 
     # Paging

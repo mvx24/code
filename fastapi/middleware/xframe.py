@@ -13,6 +13,6 @@ X_FRAME_SAME_ORIGIN = "sameorigin"
 class XFrameHeaderMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
-        if X_FRAME_HEADER not in response:
+        if X_FRAME_HEADER not in response.headers:
             response.headers[X_FRAME_HEADER] = X_FRAME_SAME_ORIGIN
         return response

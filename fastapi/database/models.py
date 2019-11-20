@@ -140,6 +140,13 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return obj
 
     @classmethod
+    async def get_or_create(cls, clause_or_row_id, **defaults):
+        obj = await cls.get(clause_or_row_id)
+        if not obj:
+            obj = cls(**defaults)
+        return obj
+
+    @classmethod
     async def read(cls, clause_or_select=None, start=None, stop=None, parse=True):
         """
         Read rows from the database, optionally limited and parsed into model instances.

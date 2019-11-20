@@ -342,9 +342,10 @@ def generate_table(model, metadata):
             ENUM_CACHE[type_] = ENUM(
                 *enums,
                 name=enum_name,
-                metadata=None if settings.ENV == Env.MIGRATE else metadata,
+                metadata=None
+                if settings.DB_DRIVERNAME == "postgresql+pg8000"
+                else metadata,
             )
-            print(ENUM_CACHE[type_])
         column, items = generate_column(table_name, field, type_)
         columns.append(column)
         schema_items.extend(items)

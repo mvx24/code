@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  postgres:
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+
+  app:
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      - ASGI_ENV=production

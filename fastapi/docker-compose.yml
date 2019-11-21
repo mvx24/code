@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  postgres:
+    image: postgres:12
+    volumes:
+      - database:/data
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+
+  app:
+    build: ./
+    depends_on:
+      - postgres
+    ports:
+      - '8000:8000'
+    environment:
+      - APP_DB_HOST=postgres
+
+volumes:
+  database:

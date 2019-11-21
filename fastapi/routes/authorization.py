@@ -24,6 +24,7 @@ class Token(BaseModel):
     def convert_timedelta(cls, v):
         if isinstance(v, timedelta):
             return int(v.total_seconds())
+        return v
 
 
 @app.post("/oauth/authorize", response_model=Token)

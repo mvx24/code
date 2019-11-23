@@ -5,7 +5,7 @@ to SQLAlchemy.
 
 from typing import get_type_hints, Set, Dict, List
 
-from pydantic import BaseModel, Schema, validate_model, validator
+from pydantic import BaseModel, Schema, validate_model, validator, Extra
 from sqlalchemy import text, literal_column, String, func
 from sqlalchemy.sql.expression import ClauseElement, Selectable, union_all, select
 
@@ -14,7 +14,7 @@ from .engine import database, metadata
 from .generation import generate_table
 from .types import PrimaryKey
 
-__all__ = ["DbBaseModel", "AbstractDbBaseModel"]
+__all__ = ["DbBaseModel", "AbstractDbBaseModel", "RequestData"]
 
 
 MetaModel = type(BaseModel)
@@ -183,6 +183,8 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         else:
             exclude = {"id", *cls._computed}
         if update_values:
+            if isinstance(update_values, BaseModel):
+                update_values = update_values.dict()
             if not read_only:
                 self.assign(
                     **{k: v for k, v in update_values.items() if k not in exclude}
@@ -373,3 +375,9 @@ class AbstractDbBaseModel(BaseModel):
         if parse:
             rows = cls.parse_rows(rows)
         return rows
+
+
+class RequestData(BaseModel):
+    class Config:
+        extra = Extra.allow
+

@@ -7,7 +7,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from database.engine import database
+from database import database, metadata, generate_table
 from middleware.xframe import XFrameHeaderMiddleware
 from .env import Env
 from .settings import settings
@@ -58,6 +58,14 @@ async def startup():
                 if not issubclass(model, DbBaseModel) and issubclass(model, BaseModel):
                     for field in model.__fields__.values():
                         camel_case_dict(field.schema.extra)
+
+        # Initialize all of the models database schema metadata
+        import models
+
+        for name in models.__all__:
+            model = getattr(models, name)
+            if issubclass(model, DbBaseModel):
+                generate_table(model, metadata)
 
         # Initialize all of the API routes
         import routes

@@ -7,6 +7,8 @@ const mjml2html = require('mjml');
 const sourceDir = path.resolve('./src');
 const buildDir = path.resolve('./build');
 
+if (!fs.existsSync(buildDir)) fs.mkdirSync(buildDir);
+
 fs.readdir(sourceDir, (err, files) => {
   files.forEach(file => {
     if (file[0] === '_') return;

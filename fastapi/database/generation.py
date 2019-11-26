@@ -112,7 +112,7 @@ from sqlalchemy.dialects.postgresql import (
     VARCHAR,
 )
 
-from app import settings, Env
+from app import settings
 from utils.casing import camel_to_snake_case
 from utils.encryption import encrypt, decrypt
 from .types import Json, PasswordStr, EncryptedStr, ForeignKeyAction

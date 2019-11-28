@@ -226,6 +226,7 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         table = self.__class__.table
         query = table.delete().where(table.c.id == self.id)
         await database.execute(query)
+        self.id = None
         return self
 
     @classmethod

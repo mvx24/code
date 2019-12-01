@@ -65,6 +65,7 @@ from uuid import UUID as UUID_Type
 
 # https://github.com/samuelcolvin/pydantic/blob/master/pydantic/types.py
 from pydantic.types import (
+    ConstrainedDecimal,
     ConstrainedInt,
     ConstrainedStr,
     Decimal,
@@ -185,7 +186,10 @@ def map_type(type_):
         # Assumed to be an array of strings
         sql_type = ARRAY(VARCHAR(255))
     elif issubclass(type_, Decimal):
-        sql_type = NUMERIC
+        if issubclass(type_, ConstrainedDecimal):
+            sql_type = NUMERIC(precision=type_.max_digits, scale=type_.decimal_places)
+        else:
+            sql_type = NUMERIC
     elif issubclass(type_, Enum) and type_ in ENUM_CACHE:
         sql_type = ENUM_CACHE[type_]
     elif type_ is datetime:

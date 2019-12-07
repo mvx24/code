@@ -3,7 +3,9 @@ const path = require('path');
 const dotenv = require('dotenv');
 const resize = require('./resize');
 
-if (!process.argv[2]) {
+const inputFile = process.argv[2];
+
+if (!inputFile) {
   console.error('No input file specified.');
   process.exit(1);
 }
@@ -15,14 +17,18 @@ dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 dotenv.config();
 process.env.SIZES = process.env.SIZES || '';
 
-const inputPath = path.resolve(process.argv[2]);
-const sizes = process.argv.length > 3 ? process.argv.slice(3) : process.env.SIZES.split(',');
+if (inputFile === 'server') {
+  require('./server');
+} else {
+  const inputPath = path.resolve(inputFile);
+  const sizes = process.argv.length > 3 ? process.argv.slice(3) : process.env.SIZES.split(',');
 
-resize(inputPath, sizes)
-  .then(results => {
-    console.log(JSON.stringify(results.metadata));
-  })
-  .catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
+  resize(inputPath, sizes)
+    .then(results => {
+      console.log(JSON.stringify(results.metadata));
+    })
+    .catch(err => {
+      console.error(err);
+      process.exit(1);
+    });
+}

@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:12
     volumes:
-      - database:/data
+      - pgbackups:/var/pgbackups
     environment:
       - POSTGRES_PASSWORD=mysecretpassword
 

@@ -27,7 +27,7 @@ function parseQueryString(str) {
 
 function resizeRequestHandler(req, res, next) {
   const params = parseQueryString(require('url').parse(req.url).search);
-  const file = path.join(stagingDir, params.file);
+  const file = path.join(stagingDir, params.filename);
   const sizes = params.sizes || process.env.SIZES;
   resize(file, sizes.split(',')).then(meta => {
     const data = JSON.stringify(meta);

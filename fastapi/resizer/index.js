@@ -3,7 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const resize = require('./resize');
 
-const inputFile = process.argv[2];
+const [, , inputFile] = process.argv;
 
 if (!inputFile) {
   console.error('No input file specified.');

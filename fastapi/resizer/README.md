@@ -6,7 +6,7 @@
 
 ## Docker as an HTTP Service
 
-`docker run --rm -v /inputfile/directory:/run/resizer -p 8005:8005 resizer server`
+`docker run -d --name resizer --rm -v ${PWD}/input:/run/resizer -p 8005:8005 resizer server`
 
 `curl http://localhost:8005?filename=inputfile.jpeg&sizes=100x100`
 

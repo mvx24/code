@@ -109,7 +109,7 @@ function putFiles(auth, bucketId, files) {
             headers: {
               Authorization: upload.authorizationToken,
               'Content-Type': mime.getType(key),
-              'X-Bz-File-Name': encodeURIComponent(key),
+              'X-Bz-File-Name': encodeURIComponent(key).replace(/%2F/g, '/'),
               'X-Bz-Content-Sha1': sha1,
             },
           },

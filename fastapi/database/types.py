@@ -78,7 +78,7 @@ class PasswordStr(str):
     min_length = 6
     max_length = 64
     curtail_length = None
-    regex = re.compile(r"^\S*$")
+    regex = r"^\S*$"
     hash_length = PASSWORD_HASH_LEN
 
     @classmethod
@@ -124,7 +124,7 @@ def passwordstr(
         min_length=min_length,
         max_length=max_length,
         curtail_length=curtail_length,
-        regex=regex and re.compile(regex),
+        regex=regex,
         hash_length=PASSWORD_HASH_LEN,
     )
     return type("PasswordStrValue", (PasswordStr,), namespace)

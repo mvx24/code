@@ -8,14 +8,24 @@ services:
     environment:
       - POSTGRES_PASSWORD=mysecretpassword
 
+  resizer:
+    build: ./resizer
+    command: server
+    volumes:
+      - resizer-staging:/run/resizer
+
   app:
     build: ./
+    volumes:
+      - resizer-staging:/run/resizer
     depends_on:
       - postgres
     ports:
       - '8000:8000'
     environment:
       - APP_DB_HOST=postgres
+      - PYTHONUNBUFFERED=1
 
 volumes:
-  database:
+  pgbackups:
+  resizer-staging:

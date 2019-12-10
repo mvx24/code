@@ -1,15 +1,15 @@
-import logging
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional
-
 import emails
 from emails.template import JinjaTemplate
 
 from app import settings
 
 
-def send_email(email_to: str, subject_template="", html_template="", environment=None):
+def send_email(
+    email_to: str,
+    subject_template: str = "",
+    html_template: str = "",
+    context: dict = None,
+):
     message = emails.Message(
         subject=JinjaTemplate(settings.EMAIL_SUBJECT_PREFIX + subject_template),
         html=JinjaTemplate(html_template),
@@ -22,4 +22,4 @@ def send_email(email_to: str, subject_template="", html_template="", environment
         smtp_options["user"] = settings.SMTP_USER
     if settings.SMTP_PASSWORD:
         smtp_options["password"] = settings.SMTP_PASSWORD
-    message.send(to=email_to, render=environment, smtp=smtp_options)
+    message.send(to=email_to, render=context, smtp=smtp_options)

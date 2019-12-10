@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     SOURCEMAP_BUCKET: str = None
     SOURCEMAP_BUCKET_PROVIDER: str = None
 
+    # Media
+    MEDIA_BUCKET: str = None
+    MEDIA_BUCKET_PROVIDER: str = None
+
 
 # Load up environment variables and initialize the settings
 env = os.getenv("ASGI_ENV", Env.DEVELOPMENT)

@@ -55,7 +55,11 @@ async def startup():
 
             for name in models.__all__:
                 model = getattr(models, name)
-                if not issubclass(model, DbBaseModel) and issubclass(model, BaseModel):
+                if (
+                    hasattr(model, "__name__")
+                    and not issubclass(model, DbBaseModel)
+                    and issubclass(model, BaseModel)
+                ):
                     for field in model.__fields__.values():
                         camel_case_dict(field.schema.extra)
 
@@ -64,7 +68,7 @@ async def startup():
 
         for name in models.__all__:
             model = getattr(models, name)
-            if issubclass(model, DbBaseModel):
+            if hasattr(model, "__name__") and issubclass(model, DbBaseModel):
                 generate_table(model, metadata)
 
         # Initialize all of the API routes

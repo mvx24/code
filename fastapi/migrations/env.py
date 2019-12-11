@@ -32,7 +32,7 @@ def configure():
     # Generate the complete database schema
     for name in models.__all__:
         model = getattr(models, name)
-        if issubclass(model, DbBaseModel):
+        if hasattr(model, '__name__') and issubclass(model, DbBaseModel):
             generate_table(model, metadata)
     return metadata
 

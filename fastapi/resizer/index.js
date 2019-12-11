@@ -25,7 +25,7 @@ if (inputFile === 'server') {
 
   resize(inputPath, sizes)
     .then(results => {
-      console.log(JSON.stringify(results.metadata));
+      console.log(JSON.stringify(results));
     })
     .catch(err => {
       console.error(err);

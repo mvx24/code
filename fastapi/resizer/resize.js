@@ -34,12 +34,18 @@ function resize(inputPath, sizes) {
       .then(metadata => {
         const parsed = path.parse(inputPath);
         const normalizedPath = path.join(parsed.dir, `${parsed.name}-x.jpeg`);
+        const originalPath = path.join(parsed.dir, `${parsed.name}.${metadata.format}`);
         const metadataPath = path.join(parsed.dir, `${parsed.name}.json`);
-        const paths = { x: normalizedPath, metadata: metadataPath };
+        const paths = { x: normalizedPath, original: originalPath, metadata: metadataPath };
         const subpromises = [];
 
+        // Rename the input as needed
+        if (inputPath !== originalPath) {
+          fs.renameSync(inputPath, originalPath);
+        }
+
         // Normalize the image
-        sharp(inputPath)
+        sharp(originalPath)
           .rotate()
           .jpeg({ progressive: true })
           .toFile(normalizedPath, (err, { width, height }) => {
@@ -56,6 +62,7 @@ function resize(inputPath, sizes) {
             if (sizes.length) {
               const normalizedImage = sharp(normalizedPath);
               sizes.forEach(size => {
+                if (size === 'x' || size === 'original') return;
                 const outputPath = path.join(parsed.dir, `${parsed.name}-${size}.jpeg`);
                 const limit = size
                   .split('x')

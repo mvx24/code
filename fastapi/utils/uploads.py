@@ -100,11 +100,11 @@ async def resize_image(model_name, url, sizes, id_):
     # Download into shared /run/resizer directory
     id_ = str(id_)
     ext = os.path.splitext(urlparse(url).path)[1]
-    sizes = ",".join(sizes)
     filename = await _download_media_upload(url, f"/run/resizer/{id_}", ext)
+    sizes_param = ",".join(sizes)
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"http://resizer:8005/?filename={filename}&sizes={sizes}"
+            f"http://resizer:8005/?filename={filename}&sizes={sizes_param}"
         ) as response:
             result = await response.json()
             for size, path in result["paths"].items():
@@ -128,11 +128,11 @@ async def transcode_video(model_name, url, sizes, id_):
     # Download into shared /run/transcoder directory
     id_ = str(id_)
     ext = os.path.splitext(urlparse(url).path)[1]
-    sizes = ",".join(sizes)
     filename = await _download_media_upload(url, f"/run/transcoder/{id_}", ext)
+    sizes_param = ",".join(sizes)
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"http://transcoder:8006/?filename={filename}&sizes={sizes}"
+            f"http://transcoder:8006/?filename={filename}&sizes={sizes_param}"
         ) as response:
             result = await response.json()
             for size, path in result["paths"].items():

@@ -109,7 +109,7 @@ async def resize_image(model_name, url, sizes, id_):
             result = await response.json()
             for size, path in result["paths"].items():
                 # Upload to permanent storage (where key is not metadata)
-                if size != "metadata":
+                if size in sizes:
                     await _upload_media(
                         path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{filename}"
                     )
@@ -124,9 +124,44 @@ async def resize_image(model_name, url, sizes, id_):
             # {"exif":{"DateTimeOriginal":1569428593,"ColorSpace":1,"ExifImageWidth":750,"ExifImageHeight":1334},"format":"jpeg","hasAlpha":false,"width":750,"height":1334}
 
 
-async def transcode_video(model_name, url, id_):
+async def transcode_video(model_name, url, sizes, id_):
     # Download into shared /run/transcoder directory
     id_ = str(id_)
     ext = os.path.splitext(urlparse(url).path)[1]
+    sizes = ",".join(sizes)
     filename = await _download_media_upload(url, f"/run/transcoder/{id_}", ext)
-    return filename
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            f"http://transcoder:8006/?filename={filename}&sizes={sizes}"
+        ) as response:
+            result = await response.json()
+            for size, path in result["paths"].items():
+                # Upload to permanent storage (where key is not metadata)
+                if size in sizes:
+                    await _upload_media(
+                        path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{filename}"
+                    )
+                # Delete the file
+                os.remove(path)
+
+            # Save the metadata into the database
+            ModelCls = getattr(models, model_name)
+            video = await ModelCls.get(id_)
+            await video.save(result["metadata"], read_only=True)
+
+
+async def delete_media(sizes, id_, ext):
+    id_ = str(id_)
+    if settings.MEDIA_BUCKET_PROVIDER == "b2":
+        async with aiohttp.ClientSession() as session:
+            auth = await b2_authorize_account(session)
+            bucket_id = await b2_get_bucket_id(session, auth, settings.MEDIA_BUCKET)
+            for size in sizes:
+                key = f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{id_}{ext}"
+                await b2(
+                    session,
+                    "b2_hide_file",
+                    {},
+                    auth,
+                    {"bucketId": bucket_id, "fileName": key},
+                )

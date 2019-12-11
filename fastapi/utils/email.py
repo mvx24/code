@@ -10,6 +10,11 @@ def send_email(
     html_template: str = "",
     context: dict = None,
 ):
+    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        print(
+            f"Warning: email not configured, not sending message {subject_template} to {email_to}"
+        )
+        return
     message = emails.Message(
         subject=JinjaTemplate(settings.EMAIL_SUBJECT_PREFIX + subject_template),
         html=JinjaTemplate(html_template),

@@ -53,8 +53,6 @@ async def implicit_access_token(form_data):
     pass
 
 
-# curl -d 'username=marc@shareroot.co&password=abcd1234&grant_type=password'  \
-# http://localhost:8000/oauth/login
 @app.post("/oauth/login", response_model=Token)
 async def password_access_token(
     form_data: OAuth2PasswordRequestFormStrict = Depends(),

@@ -10,7 +10,7 @@ from database.types import ForeignKey, HttpUrl
 
 def _id_path(id_, size, ext="jpeg"):
     id_ = str(id_)
-    return f"/{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{id_}.{ext}"
+    return f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{id_}.{ext}"
 
 
 class MediaSize(str, Enum):
@@ -28,6 +28,14 @@ class MediaFormat(str, Enum):
     TIFF = "tiff"
     WEBP = "webp"
     HEIC = "heic"
+
+    MPEG4 = "mp4"
+    WEBM = "webm"
+    QUICKTIME = "mov"
+    OGG = "ogv"
+    FLASH = "flv"
+    MOBILE = "3gp"
+    GIF = "gif"
 
     def __str__(self):
         return self.value

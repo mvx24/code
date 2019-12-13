@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from fastapi import BackgroundTasks, Depends
+from starlette.status import HTTP_201_CREATED
 
 from app.asgi import app
 from dependencies import current_user
@@ -29,7 +30,9 @@ async def update_current_user(values: dict, user: User = Depends(current_user)):
     return await user.save(values)
 
 
-@app.post("/register", response_model=User.response_model(), status_code=201)
+@app.post(
+    "/register", response_model=User.response_model(), status_code=HTTP_201_CREATED
+)
 async def register_user(user: User, background_tasks: BackgroundTasks):
     await user.save()
     background_tasks.add_task(

@@ -205,7 +205,8 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         else:
             # Implement the auto_now functionality
             for name in cls._auto_now:
-                values.setdefault(name, text("NOW()"))
+                if not read_only or not update_values or name not in update_values:
+                    values[name] = text("NOW()")
             query = (
                 table.update()
                 .where(table.c.id == self.id)
@@ -214,7 +215,9 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             )
             result = await database.fetch_one(query)
             for name in cls._auto_now:
-                if name in result:
+                if (
+                    not read_only or not update_values or name not in update_values
+                ) and name in result:
                     setattr(self, name, result[name])
         return self
 

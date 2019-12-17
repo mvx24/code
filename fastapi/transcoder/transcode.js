@@ -128,7 +128,7 @@ function transcode(inputPath, sizes) {
         );
         const outputPath = path.join(parsed.dir, `${parsed.name}-480x.mp4`);
         const metadataPath = path.join(parsed.dir, `${parsed.name}.json`);
-        const posterPath = path.join(parsed.dir, `${parsed.name}.jpeg`);
+        const posterPath = path.join(parsed.dir, `${parsed.name}-poster.jpeg`);
         const paths = {
           original: originalPath,
           metadata: metadataPath,

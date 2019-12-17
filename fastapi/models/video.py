@@ -2,8 +2,8 @@ from pydantic import Schema
 
 from .media import Media, MediaSize
 
-
-VIDEO_SIZES = (MediaSize.THUMBNAIL,)
+POSTER_SIZES = (MediaSize.THUMBNAIL, MediaSize.CARD)
+VIDEO_SIZES = (MediaSize.STANDARD, MediaSize.ORIGINAL)
 
 
 class Video(Media):

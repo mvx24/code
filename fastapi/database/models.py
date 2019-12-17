@@ -3,9 +3,11 @@ Implements DbBaseModel, a Pydantic base class for mapping some schema values
 to SQLAlchemy.
 """
 
+from datetime import datetime, timezone
 from typing import get_type_hints, Set, Dict, List
 
 from pydantic import BaseModel, Schema, validate_model, validator, Extra
+from pydantic.validators import _VALIDATORS
 from sqlalchemy import text, literal_column, String, func
 from sqlalchemy.sql.expression import ClauseElement, Selectable, union_all, select
 
@@ -18,6 +20,24 @@ __all__ = ["DbBaseModel", "AbstractDbBaseModel", "RequestData"]
 
 
 MetaModel = type(BaseModel)
+
+
+# Add a global datetime validator to make all datetimes naive utc times by default
+def remove_tzinfo(dt):
+    if dt.tzinfo:
+        dt = dt.astimezone(timezone.utc)
+        dt = dt.replace(tzinfo=None)
+    return dt
+
+
+for type_, funcs in _VALIDATORS:
+    remove_tzinfo_added = False
+    if type_ is datetime:
+        funcs.append(remove_tzinfo)
+        remove_tzinfo_added = True
+    if not remove_tzinfo:
+        print(f"\033[1;31mError on adding global timezone removal validator!\033[0m")
+        exit(1)
 
 
 class DbMetaModel(MetaModel):

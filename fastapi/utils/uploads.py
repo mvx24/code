@@ -117,14 +117,15 @@ async def resize_image(model_name, url, sizes, id_):
                 os.remove(path)
 
             # Save the metadata into the database
-            ModelCls = getattr(models, model_name)
-            image = await ModelCls.get(id_)
-            await image.save(result["metadata"], read_only=True)
-            # Example metadata:
-            # {"exif":{"DateTimeOriginal":1569428593,"ColorSpace":1,"ExifImageWidth":750,"ExifImageHeight":1334},"format":"jpeg","hasAlpha":false,"width":750,"height":1334}
+            if model_name:
+                ModelCls = getattr(models, model_name)
+                image = await ModelCls.get(id_)
+                await image.save(result["metadata"], read_only=True)
+                # Example metadata:
+                # {"exif":{"DateTimeOriginal":1569428593,"ColorSpace":1,"ExifImageWidth":750,"ExifImageHeight":1334},"format":"jpeg","hasAlpha":false,"width":750,"height":1334}
 
 
-async def transcode_video(model_name, url, sizes, id_):
+async def transcode_video(model_name, url, sizes, poster_sizes, id_):
     # Download into shared /run/transcoder directory
     id_ = str(id_)
     ext = os.path.splitext(urlparse(url).path)[1]
@@ -137,7 +138,7 @@ async def transcode_video(model_name, url, sizes, id_):
             result = await response.json()
             for size, path in result["paths"].items():
                 # Upload to permanent storage (where key is not metadata)
-                if size in sizes:
+                if size in sizes or size == "poster":
                     await _upload_media(
                         path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{filename}"
                     )
@@ -148,6 +149,10 @@ async def transcode_video(model_name, url, sizes, id_):
             ModelCls = getattr(models, model_name)
             video = await ModelCls.get(id_)
             await video.save(result["metadata"], read_only=True)
+
+            # Create poster images as needed
+            if poster_sizes:
+                await resize_image(None, video.poster_url, poster_sizes, id_)
 
 
 async def delete_media(sizes, id_, ext):

@@ -18,6 +18,11 @@ class MediaSize(str, Enum):
     CARD = "450"
     LARGE = "x720"
     NORMALIZED = "x"
+
+    POSTER = "poster"
+    STANDARD = "x480"
+    WIDESCREEN = "x1080"
+
     ORIGINAL = "original"
 
 
@@ -58,6 +63,7 @@ class Media(AbstractDbBaseModel):
     large_url: HttpUrl = Schema("http://default.example", computed=True)
     normalized_url: HttpUrl = Schema("http://default.example", computed=True)
     original_url: HttpUrl = Schema("http://default.example", computed=True)
+    poster_url: HttpUrl = Schema("http://default.example", computed=True)
 
     @validator("thumbnail_url", pre=True, always=True)
     def set_thumbnail_url(cls, v, values):
@@ -85,6 +91,14 @@ class Media(AbstractDbBaseModel):
     def set_normalized_url(cls, v, values):
         if values and values.get("id"):
             return f"https://media.digibook.app/{_id_path(values['id'], MediaSize.NORMALIZED)}"
+        return v
+
+    @validator("poster_url", pre=True, always=True)
+    def set_poster_url(cls, v, values):
+        if values and values.get("id"):
+            return (
+                f"https://media.digibook.app/{_id_path(values['id'], MediaSize.POSTER)}"
+            )
         return v
 
     @validator("original_url", pre=True, always=True)

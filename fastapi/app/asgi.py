@@ -65,6 +65,7 @@ async def startup():
 
         # Initialize all of the models database schema metadata
         import models
+        from database import DbBaseModel
 
         for name in models.__all__:
             model = getattr(models, name)

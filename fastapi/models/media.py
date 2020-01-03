@@ -103,6 +103,6 @@ class Media(AbstractDbBaseModel):
 
     @validator("original_url", pre=True, always=True)
     def set_original_url(cls, v, values):
-        if values and values.get("id"):
-            return f"https://media.digibook.app/{_id_path(values['id'], MediaSize.ORIGINAL)}"
+        if values and values.get("id") and values.get("format"):
+            return f"https://media.digibook.app/{_id_path(values['id'], MediaSize.ORIGINAL, values['format'])}"
         return v

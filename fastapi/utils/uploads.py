@@ -9,6 +9,7 @@ import aiohttp
 import models
 from app import settings
 from utils.b2 import b2, b2_authorize_account, b2_get_bucket_id
+from utils.casing import camel_case_dict
 
 
 def create_s3_upload_url(bucket, key):
@@ -108,19 +109,20 @@ async def resize_image(model_name, url, sizes, id_):
         ) as response:
             result = await response.json()
             for size, path in result["paths"].items():
+                ext = os.path.splitext(path)[1]
                 # Upload to permanent storage (where key is not metadata)
                 if size in sizes:
                     await _upload_media(
-                        path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{filename}"
+                        path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{id_}{ext}"
                     )
                 # Delete the file
                 os.remove(path)
 
             # Save the metadata into the database
             if model_name:
-                ModelCls = getattr(models, model_name)
-                image = await ModelCls.get(id_)
-                await image.save(result["metadata"], read_only=True)
+                model_type = getattr(models, model_name)
+                image = await model_type.get(id_)
+                await image.save(camel_case_dict(result["metadata"]), read_only=True)
                 # Example metadata:
                 # {"exif":{"DateTimeOriginal":1569428593,"ColorSpace":1,"ExifImageWidth":750,"ExifImageHeight":1334},"format":"jpeg","hasAlpha":false,"width":750,"height":1334}
 
@@ -137,18 +139,19 @@ async def transcode_video(model_name, url, sizes, poster_sizes, id_):
         ) as response:
             result = await response.json()
             for size, path in result["paths"].items():
+                ext = os.path.splitext(path)[1]
                 # Upload to permanent storage (where key is not metadata)
                 if size in sizes or size == "poster":
                     await _upload_media(
-                        path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{filename}"
+                        path, f"{size}/{id_[0:2]}/{id_[2:4]}/{id_[4:6]}/{id_}{ext}"
                     )
                 # Delete the file
                 os.remove(path)
 
             # Save the metadata into the database
-            ModelCls = getattr(models, model_name)
-            video = await ModelCls.get(id_)
-            await video.save(result["metadata"], read_only=True)
+            model_type = getattr(models, model_name)
+            video = await model_type.get(id_)
+            await video.save(camel_case_dict(result["metadata"]), read_only=True)
 
             # Create poster images as needed
             if poster_sizes:

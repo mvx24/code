@@ -15,7 +15,7 @@ IMAGE_SIZES = (
 
 
 class Image(Media):
-    hasAlpha: bool = Schema(
+    has_alpha: bool = Schema(
         False, title="Image has transparent background", read_only=True
     )
     exif: Dict[str, str] = Schema({}, index=True, read_only=True)

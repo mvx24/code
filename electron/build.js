@@ -12,7 +12,7 @@ process.chdir(path.resolve('./build'));
 
 // Install electron and get the package info
 fs.writeFileSync(path.resolve('./package.json'), '{}');
-childProcess.execSync('yarn add --dev electron', { stdio: [0, 1, 2] });
+childProcess.execSync('yarn add --dev electron regenerator-runtime', { stdio: [0, 1, 2] });
 const buildPkg = require(path.resolve('./package.json'));
 const electronPkg = require(path.resolve('./node_modules/electron/package.json'));
 

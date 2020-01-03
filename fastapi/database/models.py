@@ -11,7 +11,7 @@ from pydantic.validators import _VALIDATORS
 from sqlalchemy import text, literal_column, String, func
 from sqlalchemy.sql.expression import ClauseElement, Selectable, union_all, select
 
-from utils.casing import camel_case_dict
+from utils.casing import camel_case_dict, camel_to_snake_case
 from .engine import database, metadata
 from .generation import generate_table
 from .types import PrimaryKey
@@ -30,9 +30,9 @@ def remove_tzinfo(dt):
     return dt
 
 
-for type_, funcs in _VALIDATORS:
+for field_type_, funcs in _VALIDATORS:
     remove_tzinfo_added = False
-    if type_ is datetime:
+    if field_type_ is datetime:
         funcs.append(remove_tzinfo)
         remove_tzinfo_added = True
     if not remove_tzinfo:
@@ -187,7 +187,40 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             rows = cls.parse_rows(rows)
         return rows
 
-    async def save(self, update_values=None, read_only=False):
+    @classmethod
+    async def expand(cls, type_, model_or_models):
+        """
+        Given a list of homogeneous models expand their embedded fields.
+        TODO: make recursive where response_models also get expanded
+        TODO: support a reverse relationship key other than model_snake_case_id
+        """
+        expanded = []
+        single = not isinstance(model_or_models, (list, tuple))
+        if single:
+            model_or_models = [model_or_models]
+        ids = (m.id for m in model_or_models)
+        for model in model_or_models:
+            expanded.append(model.dict())
+        for embedded in type_._embedded:
+            embedded_id = f"{embedded}_id"
+            related_type = type_.__fields__[embedded].type_
+            related = related_type.get(type_.c.id.in_(ids))
+            related = {r.id: r for r in related}
+            for data in expanded:
+                data[embedded] = await related.get(data[embedded_id])
+        for embedded in type_._embedded_list:
+            reverse_id = f"{camel_to_snake_case(cls.__name__)}_id"
+            related_type = type_.__fields__[embedded].type_
+            for data in expanded:
+                data[embedded] = await related_type.read(
+                    getattr(related_type.c, reverse_id) == data["id"]
+                )
+        expanded = [type_(**data) for data in expanded]
+        if single:
+            return expanded[0]
+        return expanded
+
+    async def save(self, update_values=None, read_only=False, force_insert=False):
         """
         Insert or update the model with the database.
         Set read_only=True to force writing fields that are publicly read_only.
@@ -212,13 +245,16 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             else:
                 self.assign(**update_values)
         values = self.dict(exclude=exclude)
-        if self.is_new:
+        if self.is_new or force_insert:
             if not read_only:
                 values.update(cls._read_only_defaults)
                 self.assign(**cls._read_only_defaults)
+            if force_insert:
+                values["id"] = self.id
             query = table.insert().values(values).return_defaults()
             result = await database.fetch_one(query)
-            self.id = result["id"]
+            if not force_insert:
+                self.id = result["id"]
             for name in cls._auto_now_add:
                 if name in result:
                     setattr(self, name, result[name])
@@ -288,10 +324,13 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
             for key in cls.__fields__
             if key not in exclude
         }
+        namespace["_embedded"] = set()
+        namespace["_embedded_list"] = set()
         for key, model in embed.items():
             # All embedded models should also be response_models to remove write_only fields
-            if issubclass(model, DbBaseModel):
-                model = model.response_model()
+            # TODO: expand will also need to support this
+            # if issubclass(model, DbBaseModel):
+            #     model = model.response_model()
             key_id = f"{key}_id"
             # If embedding a ForeignKey assume that it is a single model, otherwise a list
             if key_id in cls.__fields__:
@@ -300,9 +339,11 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
                     None if field.default is None and not field.required else ...
                 )
                 namespace["__annotations__"][key] = model
+                namespace["_embedded"].add(key)
             else:
                 namespace[key] = []
                 namespace["__annotations__"][key] = List[model]
+                namespace["_embedded_list"].add(key)
         # Copy the config
         namespace["Config"] = cls.__config__
         response_model_cls = type(name, (BaseModel,), namespace)

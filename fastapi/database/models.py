@@ -167,9 +167,15 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
         return obj
 
     @classmethod
-    async def read(cls, clause_or_select=None, start=None, stop=None, parse=True):
+    async def read(
+        cls, clause_or_select=None, order_by=None, start=None, stop=None, parse=True
+    ):
         """
-        Read rows from the database, optionally limited and parsed into model instances.
+        Read rows from the database.
+        Optionally give ordering, limits, and parsed into model instances.
+        order_by an be a single column or array of columns such as:
+        table.c.first_name, table.c.first_name.asc(), table.c.first_name.desc(),
+        (table.c.first_name.asc(), table.c.last_name.asc())
         """
         if not isinstance(clause_or_select, Selectable):
             query = cls.table.select()
@@ -177,6 +183,11 @@ class DbBaseModel(BaseModel, metaclass=DbMetaModel):
                 query = query.where(clause_or_select)
         else:
             query = clause_or_select
+        if order_by is not None:
+            if isinstance(order_by, (list, tuple)):
+                query = query.order_by(*order_by)
+            else:
+                query = query.order_by(order_by)
         if start is not None:
             query = query.offset(start)
         if stop is not None:
@@ -412,7 +423,9 @@ class AbstractDbBaseModel(BaseModel):
         return [cls.parse_row(r) for r in rows]
 
     @classmethod
-    async def union(cls, subclasses, clauses=None, start=None, stop=None, parse=True):
+    async def union(
+        cls, subclasses, clauses=None, order_by=None, start=None, stop=None, parse=True
+    ):
         """
         Perform a union across multiple subclasses (tables) and combining into a single abstract base class model.
         """
@@ -429,6 +442,11 @@ class AbstractDbBaseModel(BaseModel):
                     query = query.where(clauses[i])
                 else:
                     query = query.where(clauses)
+            if order_by:
+                if isinstance(order_by, (list, tuple)):
+                    query = query.order_by(order_by[i])
+                else:
+                    query = query.order_by(order_by)
             queries.append(query)
         query = union_all(*queries)
         if start is not None:

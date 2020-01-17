@@ -72,7 +72,11 @@ function resize(inputPath, sizes) {
                 const progressive = !(limit[0] < 200 || limit[1] < 200);
                 paths[size] = outputPath;
                 if (limit.length === 1) {
-                  if (width > height) {
+                  if (size.startsWith('x')) {
+                    [resizeOpts.width] = limit;
+                  } else if (size.endsWith('x')) {
+                    [resizeOpts.height] = limit;
+                  } else if (width > height) {
                     [resizeOpts.width] = limit;
                   } else {
                     [resizeOpts.height] = limit;
@@ -83,6 +87,7 @@ function resize(inputPath, sizes) {
                 subpromises.push(
                   new Promise((subresolve, subreject) => {
                     normalizedImage
+                      .clone()
                       .rotate()
                       .resize(resizeOpts)
                       .jpeg({ progressive })

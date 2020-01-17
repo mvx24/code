@@ -27,6 +27,7 @@ def camel_case_dict(data, remove=False):
             data[snake_to_camel_case(key)] = data[key]
             if remove:
                 del data[key]
+    return data
 
 
 def snake_case_dict(data, remove=False):
@@ -36,3 +37,4 @@ def snake_case_dict(data, remove=False):
             data[sc_key] = data[key]
             if remove:
                 del data[key]
+    return data

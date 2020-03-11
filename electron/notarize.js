@@ -16,6 +16,7 @@ exports.default = async function(context) {
       appPath: `${appOutDir}/${appFileName}.app`,
       appleId: 'Your Apple ID',
       appleIdPassword: '@keychain:Your Keychain Item',
+      ascProvider: 'Your Apple Team ID shortcode',
     });
   }
   return null;

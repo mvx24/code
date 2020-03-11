@@ -167,7 +167,7 @@ if (config.storageZone) {
         begin(`Uploading to ${config.sourceMapStorageZone}:`);
         return putFiles(
           config.sourceMapStorageZone,
-          config.sourceMapStorageAccessKey,
+          sourceMapStorageAccessKey,
           sourceMapFiles,
         ).then(cleanupStorage);
       }

@@ -1,4 +1,4 @@
-const resolve = require('rollup-plugin-node-resolve');
+const resolve = require('@rollup/plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const pkg = require('./package.json');
 const babelrc = require('./babel.config.js')();

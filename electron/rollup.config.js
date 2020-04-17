@@ -6,6 +6,7 @@ const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const pkg = require('./package.json');
 const babelrc = require('./babel.config.js')();
+const { builtinModules } = require('module');
 
 // Update the preset-env to not build modules
 // and transpile all features by ignoring browserslist so that uglify works
@@ -26,13 +27,16 @@ const getNamedExports = lib => {
 };
 
 module.exports = {
+  context: 'window',
   input: 'src/index.js',
   output: {
     file: 'build/bundle.js',
     format: 'iife',
     name: pkg.name,
     sourcemap: false,
+    globals: Object.fromEntries(builtinModules.map(name => [name, `require("${name}")`])),
   },
+  external: builtinModules,
   plugins: [
     resolve({ preferBuiltins: true }),
     babel(
@@ -49,6 +53,8 @@ module.exports = {
       namedExports: {
         react: getNamedExports('react'),
         'react-dom': getNamedExports('react-dom'),
+        'react-is': getNamedExports('react-is'),
+        'prop-types': getNamedExports('prop-types'),
       },
     }),
     terser({ sourcemap: false }),

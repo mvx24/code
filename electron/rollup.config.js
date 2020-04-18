@@ -38,7 +38,7 @@ module.exports = {
   },
   external: builtinModules,
   plugins: [
-    resolve({ preferBuiltins: true }),
+    resolve({ browser: true, preferBuiltins: true }),
     babel(
       Object.assign(babelrc, {
         babelrc: false,

@@ -45,9 +45,10 @@ console.log('Created build/package.json');
   '../background.png',
   '../background@2x.png',
   '../entitlements.mac.plist',
+  './node_modules/electron/path.txt',
 ].forEach(file => {
   const src = path.resolve(file);
-  const dest = path.join(path.resolve('./build'), file);
+  const dest = path.join(path.resolve('.'), path.basename(file));
   if (fs.existsSync(src)) {
     fs.copyFileSync(src, dest);
     console.log(`cp ${src} -> ${dest}`);

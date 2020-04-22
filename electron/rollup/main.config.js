@@ -19,7 +19,7 @@ module.exports = {
     file: outputPath,
     format: 'iife',
     sourcemap: false,
-    globals: dynamicModules.map(name => [name, `require("${name}")`]),
+    globals: Object.fromEntries(dynamicModules.map(name => [name, `require("${name}")`])),
   },
   external: dynamicModules,
   plugins: [

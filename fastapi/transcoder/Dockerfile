@@ -8,7 +8,7 @@ RUN apk add yarn
 
 WORKDIR /opt/transcoder
 COPY . .
-RUN yarn install --production
+RUN yarn install --production --frozen-lockfile
 
 ENV NODE_ENV production
 EXPOSE 8006

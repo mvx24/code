@@ -8,7 +8,7 @@ RUN apk add yarn
 
 WORKDIR /opt/resizer
 COPY . .
-RUN yarn install --production
+RUN yarn install --production --frozen-lockfile
 
 ENV NODE_ENV production
 EXPOSE 8005

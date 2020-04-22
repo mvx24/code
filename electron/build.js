@@ -2,19 +2,15 @@ const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const pkg = require(path.resolve('./package.json'));
+const electronPkg = require(path.resolve('./node_modules/electron/package.json'));
 
 // First compile with rollup
 console.log('Building bundles...');
-childProcess.execSync('rollup -c', { stdio: [0, 1, 2] });
+childProcess.execSync('rollup -c rollup/bundle.config.js', { stdio: 'inherit' });
+childProcess.execSync('rollup -c rollup/main.config.js', { stdio: 'inherit' });
 
 // chdir into build
 process.chdir(path.resolve('./build'));
-
-// Install electron and get the package info
-fs.writeFileSync(path.resolve('./package.json'), '{}');
-childProcess.execSync('yarn add --dev electron regenerator-runtime', { stdio: [0, 1, 2] });
-const buildPkg = require(path.resolve('./package.json'));
-const electronPkg = require(path.resolve('./node_modules/electron/package.json'));
 
 // Create a minimal package.json file
 const minPkg = {
@@ -29,16 +25,20 @@ const minPkg = {
   main: pkg.main,
   build: pkg.build,
   electronVersion: electronPkg.version,
-  devDependencies: buildPkg.devDependencies,
+  devDependencies: {
+    electron: pkg.devDependencies.electron,
+    'regenerator-runtime': pkg.devDependencies['regenerator-runtime'],
+  },
 };
 fs.writeFileSync(path.resolve('./package.json'), JSON.stringify(minPkg, null, 2));
 console.log('Created build/package.json');
 
+// Install all dependencies
+childProcess.execSync('yarn install', { stdio: 'inherit' });
+
 // Copy the required support files
 [
-  '../main.js',
   '../index.html',
-  '../preload.js',
   '../icon.icns',
   '../icon.png',
   '../icon.ico',
@@ -55,8 +55,8 @@ console.log('Created build/package.json');
   }
 });
 try {
-  childProcess.execSync('cp -R ../lib lib', { stdio: [0, 1, 2] });
+  childProcess.execSync('cp -R ../preload preload', { stdio: 'inherit' });
 } catch (e) {}
 try {
-  childProcess.execSync('cp -R ../icons icons', { stdio: [0, 1, 2] });
+  childProcess.execSync('cp -R ../icons icons', { stdio: 'inherit' });
 } catch (e) {}

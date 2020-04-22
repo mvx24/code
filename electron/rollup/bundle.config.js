@@ -4,9 +4,19 @@ const css = require('rollup-plugin-css-only');
 const commonjs = require('@rollup/plugin-commonjs');
 const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
-const pkg = require('./package.json');
-const babelrc = require('./babel.config.js')();
+const babelrc = require('../babel.config.js')();
+const path = require('path');
 const { builtinModules } = require('module');
+
+const inputPath = path.resolve(__dirname, '../src/index.js');
+const outputPath = path.resolve(__dirname, '../build/bundle.js');
+const dynamicModules = new Array('electron', ...builtinModules);
+const commonJsModules = [
+  'prop-types',
+  'react',
+  'react-dom',
+  'react-is',
+];
 
 // Update the preset-env to not build modules
 // and transpile all features by ignoring browserslist so that uglify works
@@ -17,26 +27,16 @@ babelrc.presets.forEach(([name, options]) => {
   }
 });
 
-const getNamedExports = lib => {
-  // Get all of the keys exported from a CJS library object
-  try {
-    return Object.keys(require(lib));
-  } catch (e) {
-    return [];
-  }
-};
-
 module.exports = {
   context: 'window',
-  input: 'src/index.js',
+  input: inputPath,
   output: {
-    file: 'build/bundle.js',
+    file: outputPath,
     format: 'iife',
-    name: pkg.name,
     sourcemap: false,
-    globals: Object.fromEntries(builtinModules.map(name => [name, `require("${name}")`])),
+    globals: Object.fromEntries(dynamicModules.map(name => [name, `require("${name}")`])),
   },
-  external: builtinModules,
+  external: dynamicModules,
   plugins: [
     resolve({ browser: true, preferBuiltins: true }),
     babel(
@@ -50,12 +50,11 @@ module.exports = {
     commonjs({
       // Libraries that export an object instead of named exports
       // Rollup doesn't handle the import { x } from 'lib'; properly unless named
-      namedExports: {
-        react: getNamedExports('react'),
-        'react-dom': getNamedExports('react-dom'),
-        'react-is': getNamedExports('react-is'),
-        'prop-types': getNamedExports('prop-types'),
-      },
+      namedExports: Object.fromEntries(
+        commonJsModules.map(name => [name, Object.keys(require(name))]),
+      ),
+      ignore: dynamicModules,
+      sourcemap: false,
     }),
     terser({ sourcemap: false }),
   ],

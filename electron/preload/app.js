@@ -1,13 +1,3 @@
-const { ipcRenderer } = require('electron');
-
-ipcRenderer.on('results', (_event, results, meta) => {
-  if (window.setResults) window.setResults(results, meta);
-});
-
-ipcRenderer.on('user', (_event, user) => {
-  if (window.setUser) window.setUser(user);
-});
-
 window.addEventListener('DOMContentLoaded', () => {
   if (process.env.NODE_ENV === 'development') {
     // Setup babel require hooks to translate es6 importing/exporting and jsx

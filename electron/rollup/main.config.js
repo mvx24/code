@@ -2,6 +2,7 @@ const resolve = require('@rollup/plugin-node-resolve');
 const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const commonjs = require('@rollup/plugin-commonjs');
+const commonjsRequire = require('./plugin-commonjs-require');
 const path = require('path');
 const { builtinModules } = require('module');
 
@@ -29,6 +30,7 @@ module.exports = {
       ignore: dynamicModules,
       sourceMap: false,
     }),
+    commonjsRequire(),
     terser({ sourcemap: false }),
   ],
 };

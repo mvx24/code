@@ -2,6 +2,7 @@ const resolve = require('@rollup/plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const css = require('rollup-plugin-css-only');
 const commonjs = require('@rollup/plugin-commonjs');
+const commonjsRequire = require('./plugin-commonjs-require');
 const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const babelrc = require('../babel.config.js')();
@@ -56,6 +57,7 @@ module.exports = {
       ignore: dynamicModules,
       sourcemap: false,
     }),
+    commonjsRequire(),
     terser({ sourcemap: false }),
   ],
 };

@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const httpProxyMiddleware = require('http-proxy-middleware');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const { createBackendProxy } = require('webpack-symmetric');
 
 const options = {
@@ -64,7 +64,7 @@ function setupProxy(app) {
   };
 
   // Create and use the proxy middleware
-  const proxyMiddleware = httpProxyMiddleware(proxyConfig);
+  const proxyMiddleware = createProxyMiddleware(proxyConfig);
   app.use((req, res, next) => {
     const bypassUrl = bypass(req, res, proxyConfig);
     if (bypassUrl) {

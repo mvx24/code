@@ -1,6 +1,6 @@
 <mj-section>
   <mj-column>
-    <mj-button target="{{ button_url }}">
+    <mj-button href="{{ button_url }}">
       {{ button_title }}
     </mj-button>
   </mj-column>

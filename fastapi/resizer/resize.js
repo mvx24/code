@@ -1,29 +1,34 @@
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+const exifParser = require('exif-parser');
 
 function parseMetadata(inputPath) {
   return new Promise((resolve, reject) => {
-    // Gather the exif data
-    const metadata = {};
-    const parser = require('exif-parser')
-      .create(fs.readFileSync(inputPath))
-      .enableImageSize(false);
-    try {
-      const result = parser.parse();
-      metadata.exif = result.tags;
-    } catch (err) {} // eslint-disable-line
-
-    // Gather basic metadata
-    sharp(inputPath).metadata((err, info) => {
+    fs.readFile(inputPath, (err, data) => {
       if (err) {
         reject(err);
         return;
       }
-      metadata.format = info.format;
-      metadata.size = info.size;
-      metadata.hasAlpha = info.hasAlpha;
-      resolve(metadata);
+      // Gather the exif data
+      const metadata = {};
+      const parser = exifParser.create(data).enableImageSize(false);
+      try {
+        const result = parser.parse();
+        metadata.exif = result.tags;
+      } catch (err) {} // eslint-disable-line
+
+      // Gather basic metadata
+      sharp(inputPath).metadata((metaErr, info) => {
+        if (metaErr) {
+          reject(metaErr);
+          return;
+        }
+        metadata.format = info.format;
+        metadata.hasAlpha = info.hasAlpha;
+        metadata.size = data.length;
+        resolve(metadata);
+      });
     });
   });
 }

@@ -1,15 +1,9 @@
-const { notarize } = require('electron-notarize');
-
-/**
- * Enter app-specific password below.
- * https://github.com/electron/electron-notarize
- * https://support.apple.com/en-us/HT204397
- */
-exports.default = async function(context) {
+exports.default = async function (context) {
   const { electronPlatformName, appOutDir } = context;
   const appFileName = context.packager.appInfo.productFilename;
 
   if (electronPlatformName === 'darwin') {
+    const { notarize } = require('electron-notarize');
     const pkg = require('../package.json');
     return await notarize({
       appBundleId: pkg.build.appId,

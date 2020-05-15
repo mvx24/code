@@ -27,6 +27,7 @@ const minPkg = {
   electronVersion: electronPkg.version,
   devDependencies: {
     electron: pkg.devDependencies.electron,
+    'electron-builder': pkg.devDependencies['electron-builder'],
     'regenerator-runtime': pkg.devDependencies['regenerator-runtime'],
   },
 };

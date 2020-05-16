@@ -30,6 +30,13 @@ const minPkg = {
     'electron-builder': pkg.devDependencies['electron-builder'],
     'regenerator-runtime': pkg.devDependencies['regenerator-runtime'],
   },
+  dependencies: {
+    // Native modules
+  },
+  scripts: {
+    // Build Native modules
+    postinstall: 'electron-builder install-app-deps',
+  },
 };
 fs.writeFileSync(path.resolve('./package.json'), JSON.stringify(minPkg, null, 2));
 console.log('Created build/package.json');

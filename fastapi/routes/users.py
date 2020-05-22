@@ -1,7 +1,7 @@
 from datetime import timedelta
 
-from fastapi import BackgroundTasks, Depends
-from starlette.status import HTTP_201_CREATED
+from fastapi import BackgroundTasks, Depends, HTTPException
+from starlette.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 from app.asgi import app
 from dependencies import current_user
@@ -14,8 +14,12 @@ from utils.tokens import create_token
 async def check_availability(username: str = None, email: str = None):
     if email:
         clause = User.c.email == email
-    else:
+    elif username:
         clause = User.c.username == username
+    else:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST, detail="Missing username or email."
+        )
     users = await User.count(clause)
     return {"available": not users}
 

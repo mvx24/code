@@ -1,5 +1,5 @@
 # Use alpine because the node image wouldn't install sharp correctly without errors
-FROM alpine
+FROM alpine:3.11.6
 
 RUN apk update
 RUN apk upgrade

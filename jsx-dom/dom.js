@@ -3,10 +3,7 @@
  */
 
 function flatten(arr) {
-  for (let i = 0; i < arr.length; ++i) {
-    if (Array.isArray(arr[i])) arr.splice(i, 1, ...flatten(arr[i]));
-  }
-  return arr;
+  return Array.isArray(arr) ? [].concat(...arr.map(flatten)) : arr;
 }
 
 const logicalAttrs = {

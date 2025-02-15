@@ -24,7 +24,6 @@ dist-ssr
 *.sw?
 
 src/utils
-src/components
 src/pages
 src/hooks
 src/icons

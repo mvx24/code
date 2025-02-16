@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 
 import { KbdEnter } from '@/components/Kbd';
 import useHover from '@/hooks/useHover';
+import useKeyboard from '@/hooks/useKeyboard';
+import useCookie from '@/hooks/useCookie';
 import { useLocalStorage } from '@/hooks/useStorage';
 import reactLogo from '@/assets/react.svg';
 import viteLogo from '/vite.svg';
@@ -10,8 +12,11 @@ import './App.css';
 function App() {
   const [count, setCount] = useState(0);
   const hoverRef = useRef(null);
+  const inputRef = useRef(null);
   const isHovering = useHover(hoverRef);
   const [x, setX] = useLocalStorage('x');
+  const [y, setY] = useCookie('y', '0');
+  useKeyboard(() => alert('Search key pressed'), { keys: 'k', modifiers: 'Meta' });
 
   return (
     <>
@@ -38,7 +43,21 @@ function App() {
       </p>
       <p className="read-the-docs">Local storage x is {x}</p>
       <p>Change local storage x below:</p>
-      <input className="border" type="text" value={x || ''} onChange={e => setX(e.target.value)} />
+      <input
+        ref={inputRef}
+        className="border"
+        type="text"
+        value={x || ''}
+        onChange={e => setX(e.target.value)}
+      />
+      <p>Change cookie y below:</p>
+      <input
+        ref={inputRef}
+        className="border"
+        type="text"
+        value={y || ''}
+        onChange={e => setY(e.target.value)}
+      />
     </>
   );
 }

@@ -11,6 +11,6 @@ export default function useHover(ref: RefObject<Element | null>) {
       ref.current?.removeEventListener('mouseenter', on);
       ref.current?.removeEventListener('mouseleave', off);
     };
-  }, []);
+  }, [ref.current]);
   return isHovering;
 }

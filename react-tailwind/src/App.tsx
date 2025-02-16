@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { KbdEnter } from '@/components/Kbd';
-import reactLogo from './assets/react.svg';
+import useHover from '@/hooks/useHover';
+import { useLocalStorage } from '@/hooks/useStorage';
+import reactLogo from '@/assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
 
 function App() {
   const [count, setCount] = useState(0);
+  const hoverRef = useRef(null);
+  const isHovering = useHover(hoverRef);
+  const [x, setX] = useLocalStorage('x');
 
   return (
     <>
@@ -18,7 +23,9 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1 ref={hoverRef}>
+        Vite + React <span>{isHovering && 'Hover'}</span>
+      </h1>
       <div className="card">
         <button onClick={() => setCount(count => count + 1)}>count is {count}</button>
         <p>
@@ -29,6 +36,9 @@ function App() {
         Click on the Vite and React logos to learn more
         <KbdEnter />
       </p>
+      <p className="read-the-docs">Local storage x is {x}</p>
+      <p>Change local storage x below:</p>
+      <input className="border" type="text" value={x || ''} onChange={e => setX(e.target.value)} />
     </>
   );
 }

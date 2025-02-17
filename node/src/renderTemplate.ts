@@ -34,7 +34,7 @@ function formatText(val?: any): string {
 }
 
 /** Simple template rendering with {{var}} and {% if var %} formatting */
-export function renderTemplate(template: string, context: TemplateContext): string {
+export default function renderTemplate(template: string, context: TemplateContext): string {
   // Recursively evaluate {% for ... in %} {% endforeach %} blocks
   // then evaluate {% if ... %} {% endif %} blocks
   // then interpolate remaining {% variable %} formatted html blocks or {{ variable }} formatted text blocks

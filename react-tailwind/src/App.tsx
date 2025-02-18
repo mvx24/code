@@ -3,8 +3,10 @@ import { useRef, useState } from 'react';
 import { KbdEnter } from '@/components/Kbd';
 import useHover from '@/hooks/useHover';
 import useKeyboard from '@/hooks/useKeyboard';
+import { useEscape, useCommandEnter } from '@/hooks/useHotKey';
 import useCookie from '@/hooks/useCookie';
 import { useLocalStorage } from '@/hooks/useStorage';
+import useClickOutside from '@/hooks/useClickOutside';
 import reactLogo from '@/assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
@@ -13,14 +15,19 @@ function App() {
   const [count, setCount] = useState(0);
   const hoverRef = useRef(null);
   const inputRef = useRef(null);
+  const logosRef = useRef(null);
   const isHovering = useHover(hoverRef);
   const [x, setX] = useLocalStorage('x');
   const [y, setY] = useCookie('y', '0');
-  useKeyboard(() => alert('Search key pressed'), { keys: 'k', modifiers: 'Meta' });
+  useClickOutside(logosRef, () => console.log('Clicked outside logos'));
+  useKeyboard(() => alert('Search key pressed'), 'Command + K');
+  useEscape(() => alert('Escape key pressed'));
+  useCommandEnter(() => alert('Command + Enter pressed'));
 
   return (
     <>
-      <div>
+      <div ref={logosRef} className="border">
+        <h1>Click outside here</h1>
         <a href="https://vite.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
         </a>
@@ -38,7 +45,7 @@ function App() {
         </p>
       </div>
       <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+        Click on the Vite and React logos to learn more&nbsp;
         <KbdEnter />
       </p>
       <p className="read-the-docs">Local storage x is {x}</p>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, RefObject, DependencyList } from 'react';
 
-// Key can be a single character such as 'a', function e.g. 'F2' or a named key such as 'Enter'
+// Key can be a single character such as 'A' (Uppercase only), function e.g. 'F2' or a named key such as 'Enter'
 // For a bigger list of keys see: https://www.w3.org/TR/uievents-key/#named-key-attribute-values
 type Key =
   | string
@@ -43,13 +43,28 @@ type KeyboardCallback = (e?: KeyboardEvent) => void;
 
 function useKeyboard(
   callback: KeyboardCallback,
-  opts?: Key | KeyboardOptions,
+  keyOpts?: Key | KeyboardOptions,
   deps?: DependencyList,
 ) {
-  callback = useCallback(callback, deps || []);
-  if (typeof opts === 'string') {
-    opts = { keys: [opts] };
+  let opts: KeyboardOptions | undefined;
+  if (typeof keyOpts === 'string') {
+    const combo = keyOpts.split(' + ');
+    const keys: Key[] = [];
+    const modifiers: ModifierKey[] = [];
+    for (const key of combo) {
+      if (['Shift', 'Control', 'Alt', 'Meta'].includes(key)) {
+        modifiers.push(key as ModifierKey);
+      } else if (['Command', 'Option'].includes(key)) {
+        modifiers.push(key === 'Command' ? 'Meta' : 'Alt');
+      } else {
+        keys.push(key as Key);
+      }
+    }
+    opts = { keys, modifiers };
+  } else {
+    opts = keyOpts as KeyboardOptions;
   }
+  callback = useCallback(callback, deps || []);
   useEffect(() => {
     const keys = Array.isArray(opts?.keys) ? opts.keys : opts?.keys && [opts.keys];
     const modifiers = Array.isArray(opts?.modifiers)
@@ -67,7 +82,7 @@ function useKeyboard(
           if (!evt.getModifierState(modifier)) return;
         }
       }
-      if (keys && keys.length && !keys.includes(evt.key)) return;
+      if (keys && keys.length && !keys.includes(evt.code.replace('Key', ''))) return;
       callback(evt);
     };
 

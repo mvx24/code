@@ -24,11 +24,11 @@ export function Icon({ title, children, solid, className, ...rest }: _IconProps)
       xmlns="http://www.w3.org/2000/svg"
       aria-labelledby={title && titleId}
       className={clsx(
-        'inline-block stroke-current align-text-bottom',
+        'inline-block align-text-bottom',
         { 'w-[1.5em]': !hasSize && !hasWidth },
         { 'h-[1.5em]': !hasSize && !hasHeight },
-        { 'fill-current': solid },
-        { 'fill-none': !solid },
+        { 'fill-current stroke-none': solid },
+        { 'fill-none stroke-current': !solid },
         className,
       )}
       role="img"

@@ -1,14 +1,39 @@
 import { useRef, useState } from 'react';
 
-import { KbdEnter } from '@/components/Kbd';
+import {
+  Kbd,
+  KbdCommand,
+  KbdOption,
+  KbdControl,
+  KbdShift,
+  KbdCapsLock,
+  KbdReturn,
+  KbdBackspace,
+  KbdDelete,
+  KbdEscape,
+  KbdPageUp,
+  KbdPageDown,
+  KbdEnd,
+  KbdHome,
+  KbdTab,
+  KbdBackTab,
+  KbdLeftArrow,
+  KbdRightArrow,
+  KbdUpArrow,
+  KbdDownArrow,
+  KbdEnter,
+  KbdSpace,
+} from '@/components/Kbd';
+import Compute from '@/icons/Compute';
+import Nutrition from '@/icons/Nutrition';
 import useHover from '@/hooks/useHover';
 import useKeyboard from '@/hooks/useKeyboard';
 import { useEscape, useCommandEnter } from '@/hooks/useHotKey';
 import useCookie from '@/hooks/useCookie';
 import { useLocalStorage } from '@/hooks/useStorage';
 import useClickOutside from '@/hooks/useClickOutside';
-import reactLogo from '@/assets/react.svg';
-import viteLogo from '/vite.svg';
+import useOnlineStatus from './hooks/useOnlineStatus';
+
 import './App.css';
 
 function App() {
@@ -26,14 +51,14 @@ function App() {
 
   return (
     <>
-      <div ref={logosRef} className="border">
+      <div ref={logosRef} className="border rounded-md">
         <h1>Click outside here</h1>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <div>
+          <Compute />
+        </div>
+        <div className="text-amber-400">
+          <Nutrition />
+        </div>
       </div>
       <h1 ref={hoverRef}>
         Vite + React <span>{isHovering && 'Hover'}</span>
@@ -43,10 +68,36 @@ function App() {
         <p>
           Edit <code className="text-brand">src/App.tsx</code> and save to test HMR
         </p>
+        <p>
+          App is currently <strong>{useOnlineStatus() ? 'online' : 'offline'}</strong>
+        </p>
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more&nbsp;
-        <KbdEnter />
+        <KbdEnter /> + <Kbd>Enter</Kbd>
+        <div>
+          <KbdCommand /> +&nbsp;
+          <KbdOption /> +&nbsp;
+          <KbdControl /> +&nbsp;
+          <KbdShift /> +&nbsp;
+          <KbdCapsLock /> +&nbsp;
+          <KbdReturn /> +&nbsp;
+          <KbdBackspace /> +&nbsp;
+          <KbdDelete /> +&nbsp;
+          <KbdEscape /> +&nbsp;
+          <KbdPageUp /> +&nbsp;
+          <KbdPageDown /> +&nbsp;
+          <KbdEnd /> +&nbsp;
+          <KbdHome /> +&nbsp;
+          <KbdTab /> +&nbsp;
+          <KbdBackTab /> +&nbsp;
+          <KbdLeftArrow /> +&nbsp;
+          <KbdRightArrow /> +&nbsp;
+          <KbdUpArrow /> +&nbsp;
+          <KbdDownArrow /> +&nbsp;
+          <KbdEnter /> +&nbsp;
+          <KbdSpace />
+        </div>
       </p>
       <p className="read-the-docs">Local storage x is {x}</p>
       <p>Change local storage x below:</p>

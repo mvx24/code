@@ -16,7 +16,7 @@ import { useCallback, useEffect, DependencyList } from 'react';
 
 type HotKeyCallback = (e?: KeyboardEvent) => void;
 
-function useHotKey(keys: string[], callback: HotKeyCallback, deps?: DependencyList) {
+export function useHotKey(keys: string[], callback: HotKeyCallback, deps?: DependencyList) {
   const cb = useCallback(callback, deps || []);
   useEffect(() => {
     const modifiers = keys.filter(key => ['Shift', 'Control', 'Alt', 'Meta'].includes(key));
@@ -34,6 +34,8 @@ function useHotKey(keys: string[], callback: HotKeyCallback, deps?: DependencyLi
   }, [keys, cb]);
 }
 
+export const useCommandF = (callback: HotKeyCallback, deps?: DependencyList) =>
+  useHotKey(['Meta', 'KeyF'], callback, deps);
 export const useCommandK = (callback: HotKeyCallback, deps?: DependencyList) =>
   useHotKey(['Meta', 'KeyK'], callback, deps);
 export const useCommandEnter = (callback: HotKeyCallback, deps?: DependencyList) =>

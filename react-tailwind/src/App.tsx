@@ -1,7 +1,8 @@
-import { Route, Switch, useLocation } from 'wouter';
+import { Route, Switch } from 'wouter';
 
-import Homepage from './pages/Homepage';
-import SearchParams from './pages/SearchParams';
+import Homepage from '@/pages/Homepage';
+import SearchParams from '@/pages/SearchParams';
+import Visibility from '@/pages/Visibility';
 
 import './App.css';
 
@@ -10,6 +11,7 @@ function App() {
     <Switch>
       <Route path="/" component={Homepage} />
       <Route path="/useSearchParams" component={SearchParams} />
+      <Route path="/useVisibility" component={Visibility} />
       <Route>
         <div>404 not found</div>
       </Route>

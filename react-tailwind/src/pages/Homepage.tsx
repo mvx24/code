@@ -28,11 +28,12 @@ import Compute from '@/icons/Compute';
 import Nutrition from '@/icons/Nutrition';
 import useHover from '@/hooks/useHover';
 import useKeyboard from '@/hooks/useKeyboard';
-import { useEscape, useCommandEnter } from '@/hooks/useHotKey';
+import { useCommandF, useEscape, useCommandEnter } from '@/hooks/useHotKey';
 import useCookie from '@/hooks/useCookie';
 import { useLocalStorage } from '@/hooks/useStorage';
 import useClickOutside from '@/hooks/useClickOutside';
 import useOnlineStatus from '@/hooks/useOnlineStatus';
+import toggleFullscreen from '@/utils/toggleFullscreen';
 
 function Homepage() {
   const [count, setCount] = useState(0);
@@ -46,6 +47,7 @@ function Homepage() {
   useKeyboard(() => alert('Search key pressed'), 'Command + K');
   useEscape(() => alert('Escape key pressed'));
   useCommandEnter(() => alert('Command + Enter pressed'));
+  useCommandF(toggleFullscreen);
 
   return (
     <>
@@ -69,6 +71,7 @@ function Homepage() {
         <p>
           App is currently <strong>{useOnlineStatus() ? 'online' : 'offline'}</strong>
         </p>
+        <p>Hit command-F to toggle fullscreen</p>
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more&nbsp;
@@ -114,6 +117,11 @@ function Homepage() {
         value={y || ''}
         onChange={e => setY(e.target.value)}
       />
+      <div className="border rounded-md flex flex-col">
+        <h1>Other pages</h1>
+        <a href="/useSearchParams">Search Params</a>
+        <a href="/useVisibility">Visibility</a>
+      </div>
     </>
   );
 }

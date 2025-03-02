@@ -18,6 +18,8 @@ function SearchParams() {
             className="border"
             value={query}
             onChange={e => setQuery(e.target.value)}
+            autoCorrect="off"
+            spellCheck={false}
           />
         </div>
         <div>
@@ -28,6 +30,8 @@ function SearchParams() {
             className="border"
             value={tag}
             onChange={e => setTag(e.target.value)}
+            autoCorrect="off"
+            spellCheck={false}
           />
         </div>
         <div>

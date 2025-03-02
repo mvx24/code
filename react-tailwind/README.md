@@ -1,6 +1,9 @@
 # Other sources for hooks:
 
 https://github.com/alibaba/hooks/tree/master/packages/hooks/src
+https://github.com/mantinedev/mantine/tree/master/packages/%40mantine/hooks/src
+https://github.com/tailwindlabs/headlessui/tree/main/packages/%40headlessui-react/src/hooks
+https://react-spectrum.adobe.com/react-aria/hooks.html
 
 # React + TypeScript + Vite
 

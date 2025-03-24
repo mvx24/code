@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'wouter';
 
 import {
   Kbd,
@@ -73,7 +74,7 @@ function Homepage() {
         </p>
         <p>Hit command-F to toggle fullscreen</p>
       </div>
-      <p className="read-the-docs">
+      <div className="read-the-docs">
         Click on the Vite and React logos to learn more&nbsp;
         <KbdEnter /> + <Kbd>Enter</Kbd>
         <div>
@@ -99,7 +100,7 @@ function Homepage() {
           <KbdEnter /> +&nbsp;
           <KbdSpace />
         </div>
-      </p>
+      </div>
       <p className="read-the-docs">Local storage x is {x}</p>
       <p>Change local storage x below:</p>
       <input
@@ -119,8 +120,8 @@ function Homepage() {
       />
       <div className="border rounded-md flex flex-col">
         <h1>Other pages</h1>
-        <a href="/useSearchParams">Search Params</a>
-        <a href="/useVisibility">Visibility</a>
+        <Link href="/useSearchParams">Search Params</Link>
+        <Link href="/useVisibility">Visibility</Link>
       </div>
     </>
   );

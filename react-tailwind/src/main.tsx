@@ -1,10 +1,13 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { isSSR } from './ssr';
+import { hydrate, prerender as ssr } from 'preact-iso';
+import './index.css';
+import App from './App.tsx';
+import { ContainerNode } from 'preact';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+if (!isSSR()) {
+  hydrate(<App />, document.getElementById('root') as unknown as ContainerNode);
+}
+
+export async function prerender(data: Record<string, unknown>) {
+  return await ssr(<App {...data} />);
+}

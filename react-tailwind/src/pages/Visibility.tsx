@@ -1,7 +1,7 @@
 import useVisibility from '@/hooks/useVisibility';
 import { useState } from 'react';
 
-function SearchParams() {
+function Visibility() {
   const [visible, setVisible] = useState(true);
   useVisibility(() => {
     setVisible(!document.hidden);
@@ -11,10 +11,10 @@ function SearchParams() {
 
   return (
     <div>
-      <h1>Search Params</h1>
+      <h1>Visibility</h1>
       <div>Document is {visible ? 'visible' : 'hidden'}</div>
     </div>
   );
 }
 
-export default SearchParams;
+export default Visibility;

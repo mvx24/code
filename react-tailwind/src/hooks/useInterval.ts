@@ -6,10 +6,9 @@ function useInterval(callback: IntervalCallback, deps?: DependencyList, ms = 500
   let timeout: ReturnType<typeof setInterval>;
   const cb = useCallback(callback, deps || []);
   useEffect(() => {
-    if (timeout) {
-      clearInterval(timeout);
-    }
+    clearInterval(timeout);
     timeout = setInterval(cb, ms);
+    return clearInterval.bind(window, timeout);
   }, [cb, ms]);
 }
 

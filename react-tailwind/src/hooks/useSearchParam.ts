@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'wouter';
 
+// Another alternative is nuqs  https://nuqs.47ng.com
 function useSearchParam(name: string, replace = true): [string, (value: string) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
   return [

@@ -14,7 +14,7 @@ function useClickOutside(ref: RefObject<Element | null>, callback: ClickOutsideC
     return () => {
       document.removeEventListener('click', clickListener);
     };
-  }, [ref.current, callback]);
+  }, [callback]);
 }
 
 export default useClickOutside;

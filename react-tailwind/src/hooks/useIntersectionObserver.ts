@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { RefObject, useEffect, useMemo, useState } from 'react';
 
-const useIntersectionObserver = (options?: IntersectionObserverInit) => {
-  const ref = useRef<HTMLElement>(null);
+const useIntersectionObserver = (
+  ref: RefObject<Element | null>,
+  options?: IntersectionObserverInit,
+) => {
   const [isInView, setIsInView] = useState(false);
   const observer = useMemo(
     () =>
@@ -20,12 +22,12 @@ const useIntersectionObserver = (options?: IntersectionObserverInit) => {
     if (target) {
       observer.observe(target);
       return () => {
-        observer.unobserve(target);
+        observer.disconnect();
       };
     }
-  }, [ref.current]);
+  }, []);
 
-  return { ref, isInView };
+  return isInView;
 };
 
 export default useIntersectionObserver;

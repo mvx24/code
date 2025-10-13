@@ -1,14 +1,14 @@
-import { DependencyList, SyntheticEvent, useCallback } from 'react';
+import { DependencyList, useCallback } from 'react';
 
-type DebounceCallback = (e?: SyntheticEvent) => void;
+type DebounceCallback = (...args: any[]) => void;
 
 function useDebounce(cb: DebounceCallback, deps?: DependencyList, ms = 500): DebounceCallback {
   let timeout: ReturnType<typeof setTimeout>;
-  return useCallback((e?: SyntheticEvent) => {
+  return useCallback((...args: any[]) => {
     if (timeout) {
       clearTimeout(timeout);
     }
-    timeout = setTimeout(cb, ms, e);
+    timeout = setTimeout(cb, ms, ...args);
   }, deps || []);
 }
 

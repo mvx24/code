@@ -34,10 +34,14 @@ export function useHotKey(keys: string[], callback: HotKeyCallback, deps?: Depen
   }, [keys, cb]);
 }
 
+export const useAltL = (callback: HotKeyCallback, deps?: DependencyList) =>
+  useHotKey(['Alt', 'KeyL'], callback, deps);
 export const useCommandF = (callback: HotKeyCallback, deps?: DependencyList) =>
   useHotKey(['Meta', 'KeyF'], callback, deps);
 export const useCommandK = (callback: HotKeyCallback, deps?: DependencyList) =>
   useHotKey(['Meta', 'KeyK'], callback, deps);
+export const useCommandBackslash = (callback: HotKeyCallback, deps?: DependencyList) =>
+  useHotKey(['Meta', 'Backslash'], callback, deps);
 export const useCommandEnter = (callback: HotKeyCallback, deps?: DependencyList) =>
   useHotKey(['Meta', 'Enter'], callback, deps);
 export const useCommandS = (callback: HotKeyCallback, deps?: DependencyList) =>
